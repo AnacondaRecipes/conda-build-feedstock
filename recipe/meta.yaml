@@ -1,15 +1,12 @@
 {% set name = "conda-build" %}
-{% set version = "2.1.17" %}
-{% set sha256 = "41638eb655810bfc141d36a745c8e936bb75387c8cb56947f2937892a6435b19" %}
 
 package:
   name: {{ name }}
-  version: {{ version }}
+  version: {{ environ['GIT_DESCRIBE_TAG'] }}
 
 source:
-  fn: {{ name }}-{{ version }}.tar.gz
-  url: https://github.com/conda/{{ name }}/archive/{{ version }}.tar.gz
-  sha256: {{ sha256 }}
+  git_url: https://github.com/mingwandroid/{{ name }}.git
+  git_tag: master
 
 build:
   number: 0
@@ -21,10 +18,11 @@ build:
     - conda-inspect = conda_build.cli.main_inspect:main
     - conda-metapackage = conda_build.cli.main_metapackage:main
     - conda-render = conda_build.cli.main_render:main
-    - conda-sign = conda_build.cli.main_sign:main
     - conda-skeleton = conda_build.cli.main_skeleton:main
 
 requirements:
+  build:
+    - git
   host:
     - python
     - setuptools
@@ -38,10 +36,10 @@ requirements:
     - enum34             # [py27]
     - filelock
     - futures            # [py27]
+    - glob2
     - jinja2
     - patchelf           # [linux]
     - pkginfo
-    - pycrypto
     - python
     - pyyaml
     - six
@@ -84,9 +82,6 @@ test:
     - which conda-render  # [unix]
     - where conda-render  # [win]
     - conda-render -h
-    - which conda-sign  # [unix]
-    - where conda-sign  # [win]
-    - conda-sign -h
     - which conda-skeleton  # [unix]
     - where conda-skeleton  # [win]
     - conda-skeleton -h
