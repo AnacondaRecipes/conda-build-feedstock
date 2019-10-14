@@ -45,7 +45,7 @@ requirements:
     - python
     - py-lief  # [not (win and py2k) and not ppc64le]
     - pyyaml
-    - ripgrep            # [x86_64]
+    - ripgrep            # [x86_64 and not win]
     - scandir            # [py27]
     - setuptools
     - six
