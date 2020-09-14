@@ -9,8 +9,6 @@ package:
 source:
   url: https://github.com/conda/{{ name }}/releases/download/{{ version }}/{{ name }}-{{ version }}.tar.gz
   sha256: {{ sha256 }}
-  patches:
-    - gh3606.patch
 
 build:
   number: 0
