@@ -105,20 +105,19 @@ test:
 about:
   home: https://github.com/conda/conda-build
   summary: tools for building conda packages
-  license: BSD 3-Clause
+  license: BSD-3-Clause
   license_family: BSD
   license_file: LICENSE.txt
   description: |
     Conda-build contains commands and tools to allow you to build your own
     packages for conda.
-  doc_url: http://conda.pydata.org/docs/
+  doc_url: https://docs.conda.io/projects/conda-build/en/latest/
   dev_url: https://github.com/conda/conda-build
 
 extra:
   recipe-maintainers:
     - jakirkham
     - jjhelmus
-    - mingwandroid
     - msarahan
     - mwcraig
     - ocefpaf
@@ -127,3 +126,5 @@ extra:
     - scopatz
     - stuertz
     - CJ-Wright
+    - jezdez
+    - chenghlee
