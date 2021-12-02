@@ -1,6 +1,6 @@
 {% set name = "conda-build" %}
-{% set version = "3.21.6" %}
-{% set sha256 = "4ad7b12f474ff72c4ceba2c05f5eec8679ffbdb29578ae4b70ca6ba53a06ba89" %}
+{% set version = "3.21.7" %}
+{% set sha256 = "fddb305a72adfb2c618b2c670844949978c36c54ce65c2de6ad836fd0e7e2f87" %}
 
 package:
   name: {{ name }}
@@ -28,34 +28,31 @@ requirements:
     - python
     - pip
     - conda-package-handling >=1.3
+    - wheel
   run:
     - beautifulsoup4
     - chardet
-    - conda  >=4.5
-    - contextlib2        # [py27]
-    - enum34             # [py27]
+    - conda >=4.5
+    - conda-package-handling >=1.3
     - filelock
-    - futures            # [py27]
     - jinja2
     - patchelf      # [linux]
     - pkginfo
     - psutil
+    - py-lief  # [not win]
     - python
-    - py-lief  # [not (win and py2k)]
     - pyyaml
+    - python-libarchive-c
+    - requests
     - ripgrep            # [x86_64 and not win]
-    - scandir            # [py27]
     - setuptools
     - six
     - glob2 >=0.6
     - pytz
     - tqdm
-    - conda-package-handling >=1.3
-    - python-libarchive-c
-    - requests
 
   run_constrained:
-    - conda-verify  >=3.1.0
+    - conda-verify >=3.1.0
 
 test:
   # If you run the test suite (~10 min), these are required
@@ -70,6 +67,9 @@ test:
 
   imports:
     - conda_build
+    - conda_build.api
+    - conda_build.cli.main_build
+    - conda_build.cli.main_render
 
   commands:
     # Check for all subcommands
@@ -108,20 +108,19 @@ test:
 about:
   home: https://github.com/conda/conda-build
   summary: tools for building conda packages
-  license: BSD 3-Clause
+  license: BSD-3-Clause
   license_family: BSD
   license_file: LICENSE.txt
   description: |
     Conda-build contains commands and tools to allow you to build your own
     packages for conda.
-  doc_url: http://conda.pydata.org/docs/
+  doc_url: https://docs.conda.io/projects/conda-build/en/latest/
   dev_url: https://github.com/conda/conda-build
 
 extra:
   recipe-maintainers:
     - jakirkham
     - jjhelmus
-    - mingwandroid
     - msarahan
     - mwcraig
     - ocefpaf
@@ -130,3 +129,5 @@ extra:
     - scopatz
     - stuertz
     - CJ-Wright
+    - jezdez
+    - chenghlee
