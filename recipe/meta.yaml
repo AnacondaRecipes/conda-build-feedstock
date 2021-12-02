@@ -67,6 +67,9 @@ test:
 
   imports:
     - conda_build
+    - conda_build.api
+    - conda_build.cli.main_build
+    - conda_build.cli.main_render
 
   commands:
     # Check for all subcommands
