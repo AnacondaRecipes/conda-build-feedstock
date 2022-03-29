@@ -1,6 +1,8 @@
 {% set name = "conda-build" %}
 {% set version = "3.21.8" %}
+{% set build_number = "2" %}
 {% set sha256 = "0031aff4a34e66340f90428051d480c6c456c89e267f78cf5987126bee68ca5b" %}
+
 
 package:
   name: {{ name }}
@@ -11,8 +13,7 @@ source:
   sha256: {{ sha256 }}
 
 build:
-  number: 1
-  skip: True  # [py==310]
+  number: {{ build_number }}
   entry_points:
     - conda-build = conda_build.cli.main_build:main
     - conda-convert = conda_build.cli.main_convert:main
@@ -31,26 +32,26 @@ requirements:
     - conda-package-handling >=1.3
     - wheel
   run:
-    - beautifulsoup4
-    - chardet
     - conda >=4.5
+    - requests
     - conda-package-handling >=1.3
     - filelock
-    - jinja2
-    - patchelf      # [linux]
-    - pkginfo
-    - psutil
-    - py-lief
-    - python
     - pyyaml
-    - python-libarchive-c
-    - requests
-    - ripgrep            # [x86_64 and not win]
-    - setuptools
-    - six
-    - glob2 >=0.6
+    - jinja2
+    - pkginfo
+    - beautifulsoup4
+    - chardet
     - pytz
     - tqdm
+    - psutil
+    - six
+    - python-libarchive-c
+    - setuptools
+    - patchelf      # [linux]
+    - py-lief
+    - python
+    - ripgrep            # [x86_64 and not win]
+    - glob2 >=0.6
 
   run_constrained:
     - conda-verify >=3.1.0
@@ -74,33 +75,33 @@ test:
 
   commands:
     # Check for all subcommands
-    - type -P conda-build  # [unix]
-    - where conda-build  # [win]
+    - type -P conda-build    # [unix]
+    - where conda-build      # [win]
     - conda-build -h
-    - type -P conda-convert  # [unix]
-    - where conda-convert  # [win]
+    - type -P conda-convert   # [unix]
+    - where conda-convert     # [win]
     - conda-convert -h
-    - type -P conda-develop  # [unix]
-    - where conda-develop  # [win]
-    - type -P conda-debug  # [unix]
-    - where conda-debug  # [win]
+    - type -P conda-develop   # [unix]
+    - where conda-develop     # [win]
+    - type -P conda-debug     # [unix]
+    - where conda-debug       # [win]
     - conda-develop -h
-    - type -P conda-index  # [unix]
-    - where conda-index  # [win]
+    - type -P conda-index     # [unix]
+    - where conda-index       # [win]
     - conda-index -h
-    - type -P conda-inspect  # [unix]
-    - where conda-inspect  # [win]
+    - type -P conda-inspect   # [unix]
+    - where conda-inspect     # [win]
     - conda-inspect linkages -h \| grep "--name ENVIRONMENT"  # [unix]
     - conda-inspect objects -h \| grep "--name ENVIRONMENT"   # [osx]
     - conda-inspect -h
     - type -P conda-metapackage  # [unix]
-    - where conda-metapackage  # [win]
+    - where conda-metapackage    # [win]
     - conda-metapackage -h
-    - type -P conda-render  # [unix]
-    - where conda-render  # [win]
+    - type -P conda-render    # [unix]
+    - where conda-render      # [win]
     - conda-render -h
     - type -P conda-skeleton  # [unix]
-    - where conda-skeleton  # [win]
+    - where conda-skeleton    # [win]
     - conda-skeleton -h
 
     # Check for bdist_conda
