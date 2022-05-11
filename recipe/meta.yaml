@@ -13,6 +13,7 @@ source:
   sha256: {{ sha256 }}
   patches:
     - ignore_libstdcxx-ng.patch
+    - mcg1969-fetch-all.patch
 
 build:
   number: {{ build_number }}
