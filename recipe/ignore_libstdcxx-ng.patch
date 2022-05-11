@@ -1,0 +1,12 @@
+diff --git a/conda_build/post.py b/conda_build/post.py
+index ca507901..e2084322 100644
+--- a/conda_build/post.py
++++ b/conda_build/post.py
+@@ -1053,6 +1053,7 @@ def check_overlinking_impl(pkg_name, pkg_version, build_str, build_number, subdi
+     ignore_list = utils.ensure_list(ignore_run_exports)
+     if subdir.startswith('linux'):
+         ignore_list.append('libgcc-ng')
++        ignore_list.append('libstdcxx-ng')
+ 
+     package_nature = {package: library_nature(package, run_prefix, subdir, bldpkgs_dirs, output_folder, channel_urls)
+                       for package in packages}
