@@ -1,7 +1,7 @@
 {% set name = "conda-build" %}
-{% set version = "3.21.8" %}
-{% set build_number = "2" %}
-{% set sha256 = "0031aff4a34e66340f90428051d480c6c456c89e267f78cf5987126bee68ca5b" %}
+{% set version = "3.21.9" %}
+{% set build_number = "0" %}
+{% set sha256 = "80bdb63f6399c1b418c20b4df998cd891fc205c63132267de4363febb6125b54" %}
 
 
 package:
@@ -32,7 +32,7 @@ requirements:
     - conda-package-handling >=1.3
     - wheel
   run:
-    - conda >=4.5
+    - conda >=4.13
     - requests
     - conda-package-handling >=1.3
     - filelock
