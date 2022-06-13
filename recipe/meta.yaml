@@ -1,6 +1,6 @@
 {% set name = "conda-build" %}
 {% set version = "3.21.9" %}
-{% set build_number = "0" %}
+{% set build_number = "1" %}
 {% set sha256 = "19a5568e09ee476c7e9e68e00583f8ff1e4ca16b709e5078552156194ecd14ee" %}
 
 
@@ -26,6 +26,9 @@ build:
     - conda-skeleton = conda_build.cli.main_skeleton:main
 
 requirements:
+  build:
+    - patch    >=2.6     # [not win]
+    - m2-patch >=2.6     # [win]
   host:
     - python
     - pip
@@ -52,6 +55,8 @@ requirements:
     - python
     - ripgrep            # [x86_64 and not win]
     - glob2 >=0.6
+    - patch    >=2.6     # [not win]
+    - m2-patch >=2.6     # [win]
 
   run_constrained:
     - conda-verify >=3.1.0
