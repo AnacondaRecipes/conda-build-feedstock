@@ -1,7 +1,7 @@
 {% set name = "conda-build" %}
-{% set version = "3.21.9" %}
+{% set version = "3.22.0" %}
 {% set build_number = "0" %}
-{% set sha256 = "19a5568e09ee476c7e9e68e00583f8ff1e4ca16b709e5078552156194ecd14ee" %}
+{% set sha256 = "????" %}
 
 
 package:
@@ -133,3 +133,4 @@ extra:
     - CJ-Wright
     - jezdez
     - chenghlee
+    - kenodegard
