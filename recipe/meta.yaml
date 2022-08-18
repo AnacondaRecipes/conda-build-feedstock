@@ -42,7 +42,6 @@ requirements:
     - patchelf      # [linux]
     - patch     >=2.6   # [not win]
     - m2-patch  >=2.6   # [win]
-    - pip
     - pkginfo
     - psutil
     - py-lief
