@@ -33,26 +33,26 @@ requirements:
     - conda-package-handling >=1.3
     - wheel
   run:
-    - conda >=4.5
-    - requests
-    - conda-package-handling >=1.3
-    - filelock
-    - pyyaml
-    - jinja2
-    - pkginfo
     - beautifulsoup4
     - chardet
-    - pytz
-    - tqdm
-    - psutil
-    - six
-    - python-libarchive-c
-    - setuptools
+    - conda >=4.5
+    - conda-package-handling >=1.3
+    - filelock
+    - glob2 >=0.6
+    - jinja2
     - patchelf      # [linux]
+    - pkginfo
+    - psutil
     - py-lief
     - python
+    - python-libarchive-c
+    - pytz
+    - pyyaml
+    - requests
     - ripgrep            # [x86_64 and not win]
-    - glob2 >=0.6
+    - setuptools
+    - six
+    - tqdm
 
   run_constrained:
     - conda-verify >=3.1.0
