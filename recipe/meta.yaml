@@ -43,6 +43,7 @@ requirements:
     - patchelf      # [linux]
     - patch     >=2.6   # [not win]
     - m2-patch  >=2.6   # [win]
+    - pip
     - pkginfo
     - psutil
     - py-lief
@@ -55,6 +56,7 @@ requirements:
     - setuptools
     - six
     - tqdm
+    - wheel
 
   run_constrained:
     - conda-verify >=3.1.0
