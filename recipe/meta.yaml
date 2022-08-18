@@ -29,6 +29,7 @@ requirements:
   host:
     - python
     - pip
+    - setuptools
     - conda-package-handling >=1.3
     - wheel
   run:
