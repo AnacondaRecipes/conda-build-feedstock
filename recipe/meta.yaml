@@ -13,6 +13,7 @@ source:
   sha256: {{ sha256 }}
 
 build:
+  skip: True  # [py<36]
   number: {{ build_number }}
   entry_points:
     - conda-build = conda_build.cli.main_build:main
@@ -30,9 +31,11 @@ requirements:
     - python
     - pip
     - conda-package-handling >=1.3
+    - setuptools
     - wheel
   run:
     - beautifulsoup4
+    - cctools # [osx]
     - chardet
     - conda >=4.5
     - conda-package-handling >=1.3
@@ -53,6 +56,7 @@ requirements:
     - ripgrep            # [x86_64 and not win]
     - setuptools
     - six
+    - toml
     - tqdm
 
   run_constrained:
@@ -73,8 +77,12 @@ test:
   imports:
     - conda_build
     - conda_build.api
+    - conda_build.cli
     - conda_build.cli.main_build
     - conda_build.cli.main_render
+    - conda_build.jinja_context
+    - conda_build.os_utils
+    - conda_build.skeletons
 
   commands:
     # Check for all subcommands
