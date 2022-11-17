@@ -1,6 +1,6 @@
 {% set name = "conda-build" %}
 {% set version = "3.23.0" %}
-{% set build_number = "0" %}
+{% set build_number = "1" %}
 {% set sha256 = "f00d3f6d188acac8655b1af759a1fd1c478703d6e51d8d158db6456005c0b079" %}
 
 
@@ -37,7 +37,7 @@ requirements:
     - beautifulsoup4
     - cctools # [osx]
     - chardet
-    - conda >=4.5
+    - conda >=4.13
     - conda-package-handling >=1.3
     - filelock
     - glob2 >=0.6
