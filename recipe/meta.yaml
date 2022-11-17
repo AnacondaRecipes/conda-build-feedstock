@@ -1,5 +1,5 @@
 {% set name = "conda-build" %}
-{% set version = "3.22.0" %}
+{% set version = "3.23.0" %}
 {% set build_number = "0" %}
 {% set sha256 = "d43407a10f383d9445f2fea55a870d6ad2bdb2265701f5da474e2abfa980d95c" %}
 
