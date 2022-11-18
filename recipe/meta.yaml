@@ -128,7 +128,6 @@ about:
     Conda-build contains commands and tools to allow you to build your own
     packages for conda.
   doc_url: https://docs.conda.io/projects/conda-build/en/latest/
-  doc_source_url: https://github.com/conda/conda-build/blob/main/docs/source/index.rst
   dev_url: https://github.com/conda/conda-build
 
 extra:
