@@ -232,4 +232,3 @@ Feedstock Maintainers
 * [@pelson](https://github.com/pelson/)
 * [@scopatz](https://github.com/scopatz/)
 * [@stuertz](https://github.com/stuertz/)
-
