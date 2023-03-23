@@ -1,7 +1,7 @@
 {% set name = "conda-build" %}
-{% set version = "3.23.3" %}
-{% set build_number = "1" %}
-{% set sha256 = "53e9824850822c6a2b44a6b493c8d24161cedec3d74d7dc488278e2bc6ac8ab1" %}
+{% set version = "3.24.0" %}
+{% set build_number = "0" %}
+{% set sha256 = "e018d415948bdfba969c84e0bd4c7fbc2692372d030ac021f09e40cfe19c7341" %}
 
 
 package:
@@ -13,7 +13,7 @@ source:
   sha256: {{ sha256 }}
 
 build:
-  skip: True  # [py<36]
+  skip: True  # [py<38]
   number: {{ build_number }}
   entry_points:
     - conda-build = conda_build.cli.main_build:main
@@ -45,6 +45,7 @@ requirements:
     - patchelf      # [linux]
     - patch     >=2.6   # [not win]
     - m2-patch  >=2.6   # [win]
+    - packaging
     - pkginfo
     - psutil
     - py-lief
@@ -54,9 +55,8 @@ requirements:
     - pyyaml
     - requests
     - ripgrep            # [x86_64 and not win]
-    - setuptools
     - six
-    - toml
+    - tomli         # [py<311]
     - tqdm
 
   run_constrained:
