@@ -104,3 +104,6 @@ about:
   dev_url: https://github.com/conda/conda-build
 
 extra:
+  skip-lints:
+    - python_build_tool_in_run
+    - missing_pip_check
