@@ -104,17 +104,3 @@ about:
   dev_url: https://github.com/conda/conda-build
 
 extra:
-  recipe-maintainers:
-    - jakirkham
-    - jjhelmus
-    - msarahan
-    - mwcraig
-    - ocefpaf
-    - patricksnape
-    - pelson
-    - scopatz
-    - stuertz
-    - CJ-Wright
-    - jezdez
-    - chenghlee
-    - kenodegard
