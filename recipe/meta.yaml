@@ -29,7 +29,9 @@ build:
 
 requirements:
   build:
-    - git
+    # The build workers have cygwin git already installed so it is not necessary,
+    # see https://github.com/anaconda-distribution/anaconda-linter/issues/189#issue-1568495905
+    - git  # [not win]
   host:
     - python
     - pip
@@ -107,3 +109,4 @@ extra:
   skip-lints:
     - python_build_tool_in_run
     - missing_pip_check
+    - build_tools_must_be_in_build
