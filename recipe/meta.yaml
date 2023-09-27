@@ -109,3 +109,4 @@ extra:
     - python_build_tool_in_run
     - missing_pip_check
     - build_tools_must_be_in_build
+    - patch_unnecessary
