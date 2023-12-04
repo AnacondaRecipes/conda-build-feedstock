@@ -1,7 +1,7 @@
 {% set name = "conda-build" %}
-{% set version = "3.27.0" %}
+{% set version = "3.28.0" %}
 {% set build_number = "0" %}
-{% set sha256 = "013592ee86c443961799adf96840434bad9851fe789b75e213d881819f42c5d9" %}
+{% set sha256 = "efc713ba0cfe75a9ef3c0a6b2e7455ca89c1e9d298f15b75d769c0c47cc2e67f" %}
 
 
 package:
@@ -47,10 +47,12 @@ requirements:
     - conda-package-handling >=1.3
     - filelock
     - jinja2
-    - patchelf      # [linux]
-    - patch     >=2.6   # [not win]
+    - jsonschema >=4.19
     - m2-patch  >=2.6   # [win]
+    - menuinst
     - packaging
+    - patch     >=2.6   # [not win]
+    - patchelf      # [linux]
     - pkginfo
     - psutil
     - py-lief
@@ -59,7 +61,6 @@ requirements:
     - pytz
     - pyyaml
     - requests
-    - six
     - tomli         # [py<311]
     - tqdm
   run_constrained:
