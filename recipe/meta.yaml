@@ -74,9 +74,11 @@ test:
     - conda_build.index
   requires:
     - setuptools
+    - pip
   files:
     - test_bdist_conda_setup.py
   commands:
+    - python -m pip check
     # builtin subcommands
     - conda --help
     - conda build --help
@@ -92,7 +94,6 @@ test:
     - conda debug --help
     # bdist_conda
     - python test_bdist_conda_setup.py bdist_conda --help
-    - python -m pip check
 
 about:
   home: https://github.com/conda/conda-build
