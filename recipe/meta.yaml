@@ -1,7 +1,7 @@
 {% set name = "conda-build" %}
-{% set version = "3.28.0" %}
+{% set version = "3.28.1" %}
 {% set build_number = "0" %}
-{% set sha256 = "efc713ba0cfe75a9ef3c0a6b2e7455ca89c1e9d298f15b75d769c0c47cc2e67f" %}
+{% set sha256 = "5df6757f2762574f26f66e0652f1cb0debb0079ed7b0f6732e612b3882e64967" %}
 
 
 package:
@@ -74,9 +74,11 @@ test:
     - conda_build.index
   requires:
     - setuptools
+    - pip
   files:
     - test_bdist_conda_setup.py
   commands:
+    - python -m pip check
     # builtin subcommands
     - conda --help
     - conda build --help
