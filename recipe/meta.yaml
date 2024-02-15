@@ -1,7 +1,7 @@
 {% set name = "conda-build" %}
-{% set version = "24.1.1" %}
+{% set version = "24.1.2" %}
 {% set build_number = "0" %}
-{% set sha256 = "add8ccf7f5c1be96c2ac3d596e80a0dcd33bf9250fa759477292668904da4bb1" %}
+{% set sha256 = "4a93cfe56d40dee3e444d845f44feb9f0cc2ec8e9427a699341d5eb177961d29" %}
 
 
 package:
@@ -42,7 +42,7 @@ requirements:
     - cctools # [osx]
     - chardet
     - conda >=22.11.0
-    - conda-index
+    - conda-index >=0.4.0
     - conda-package-handling >=1.3
     - filelock
     - jinja2
