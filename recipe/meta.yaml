@@ -1,7 +1,7 @@
 {% set name = "conda-build" %}
-{% set version = "24.5.1" %}
+{% set version = "24.7.0" %}
 {% set build_number = "0" %}
-{% set sha256 = "04fc40032bb35ea6b9bb18009643daf8f522e12a7e397516a9b2fa64b7f4927a" %}
+{% set sha256 = "aea0782c0402fcd1f975e1af576102900187943c94f844e4be591dd084545992" %}
 
 
 package:
@@ -43,7 +43,7 @@ requirements:
     - chardet
     - conda >=23.7.0
     - conda-index >=0.4.0
-    - conda-package-handling >=1.3
+    - conda-package-handling >=2.2.0
     - filelock
     - frozendict >=2.4.2
     - jinja2
