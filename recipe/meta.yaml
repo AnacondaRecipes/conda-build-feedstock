@@ -73,7 +73,7 @@ test:
     # updated submodules (can be dropped after 1-2 releases)
     - conda_build.index
   requires:
-    - setuptools
+    - setuptools <75.1.0  # temporary, see https://github.com/conda/conda-build/issues/5493
     - pip
   commands:
     - python -m pip check
