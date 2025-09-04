@@ -10,8 +10,6 @@ package:
 source:
   url: https://github.com/conda/{{ name }}/releases/download/{{ version }}/{{ name }}-{{ version }}.tar.gz
   sha256: {{ sha256 }}
-  patches:
-    - handle-dynamic-unknown-tags.patch
 
 build:
   skip: True  # [py<39]
