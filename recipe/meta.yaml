@@ -1,7 +1,7 @@
 {% set name = "conda-build" %}
-{% set version = "25.5.0" %}
+{% set version = "25.7.0" %}
 {% set build_number = "0" %}
-{% set sha256 = "b1a0956d0beac42e54d0ee81b0cbf506e2bae823420413e57c1fbb9ccbd1e729" %}
+{% set sha256 = "2d2a79997f915c6fe02cc8877911dbaddc6878ff94ae79719a9ae45d5beb8a95" %}
 
 package:
   name: {{ name }}
@@ -35,7 +35,6 @@ requirements:
     - pip
     - hatchling >=1.12.2
     - hatch-vcs >=0.2.0
-    - wheel
   run:
     - beautifulsoup4
     - cctools # [osx]
