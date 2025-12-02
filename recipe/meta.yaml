@@ -12,7 +12,7 @@ source:
   sha256: {{ sha256 }}
 
 build:
-  skip: True  # [py<39]
+  skip: True  # [py<310]
   number: {{ build_number }}
   script: {{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv
   entry_points:
