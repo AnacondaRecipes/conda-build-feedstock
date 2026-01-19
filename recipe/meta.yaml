@@ -10,11 +10,12 @@ package:
 source:
   url: https://github.com/conda/{{ name }}/releases/download/{{ version }}/{{ name }}-{{ version }}.tar.gz
   sha256: {{ sha256 }}
+  patches:
+    - 0001-Add-win-arm64-support.patch
 
 build:
   skip: True  # [py<310]
   number: {{ build_number }}
-  script: {{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv
   entry_points:
     - conda-build = conda_build.cli.main_build:execute
     - conda-convert = conda_build.cli.main_convert:execute
@@ -30,6 +31,7 @@ requirements:
     # The build workers have cygwin git already installed so it is not necessary,
     # see https://github.com/anaconda-distribution/anaconda-linter/issues/189#issue-1568495905
     - git  # [not win]
+    - {{ compiler('cxx') }}  # [win]
   host:
     - python
     - pip

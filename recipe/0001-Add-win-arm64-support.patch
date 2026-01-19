@@ -1,0 +1,152 @@
+From be32511dff1b42578a59e437359447ef21f344b7 Mon Sep 17 00:00:00 2001
+From: Eric Lundby <Eric.Lundby@gmail.com>
+Date: Mon, 19 Jan 2026 13:15:59 -0700
+Subject: [PATCH 1/1] Add win-arm64 support
+
+---
+ conda_build/convert.py                       |  7 +-
+ conda_build/launcher_sources/build_arm64.cmd | 81 ++++++++++++++++++++
+ conda_build/noarch_python.py                 |  2 +-
+ tests/test_codesigned.py                     |  3 +-
+ 4 files changed, 88 insertions(+), 5 deletions(-)
+ create mode 100644 conda_build/launcher_sources/build_arm64.cmd
+
+diff --git a/conda_build/convert.py b/conda_build/convert.py
+index 5b234364..432e7952 100644
+--- a/conda_build/convert.py
++++ b/conda_build/convert.py
+@@ -555,13 +555,14 @@ def create_exe_file(directory, executable, target_platform):
+     Positional arguments:
+     directory (str) -- the file path to the 'Scripts' directory
+     executable (str) -- the filename of the executable to create an exe file for
+-    target_platform -- the platform to target: 'win-64' or 'win-32'
++    target_platform -- the platform to target: 'win-64', 'win-32', or 'win-arm64'
+     """
+     exe_directory = os.path.dirname(__file__)
+ 
+-    if target_platform.endswith("32"):
++    if target_platform.endswith("arm64"):
++        executable_file = os.path.join(exe_directory, "cli-arm64.exe")
++    elif target_platform.endswith("32"):
+         executable_file = os.path.join(exe_directory, "cli-32.exe")
+-
+     else:
+         executable_file = os.path.join(exe_directory, "cli-64.exe")
+ 
+diff --git a/conda_build/launcher_sources/build_arm64.cmd b/conda_build/launcher_sources/build_arm64.cmd
+new file mode 100644
+index 00000000..ab46d0bd
+--- /dev/null
++++ b/conda_build/launcher_sources/build_arm64.cmd
+@@ -0,0 +1,81 @@
++@echo off
++REM Build script for ARM64 Windows launchers using VS2022
++REM Run this from an ARM64 Native Tools Command Prompt for VS 2022
++REM or after running: vcvarsall.bat arm64
++
++setlocal enabledelayedexpansion
++
++REM Check if we're in the right environment
++where cl.exe >nul 2>&1
++if %ERRORLEVEL% neq 0 (
++    echo ERROR: cl.exe not found. Please run from ARM64 Native Tools Command Prompt
++    echo or run: "C:\Program Files\Microsoft Visual Studio\2022\...\vcvarsall.bat" arm64
++    exit /b 1
++)
++
++REM Download launcher.c if not present
++if not exist launcher.c (
++    echo Downloading launcher.c from CPython 3.7...
++    curl -SLo launcher.c https://raw.githubusercontent.com/python/cpython/3.7/PC/launcher.c
++    if %ERRORLEVEL% neq 0 (
++        echo ERROR: Failed to download launcher.c
++        exit /b 1
++    )
++    
++    echo Applying patch...
++    git apply --verbose cpython-launcher-c-mods-for-setuptools.3.7.patch
++    if %ERRORLEVEL% neq 0 (
++        echo WARNING: git apply failed, trying patch command...
++        patch -p0 < cpython-launcher-c-mods-for-setuptools.3.7.patch
++    )
++)
++
++REM Create resource file
++echo Creating resources.rc...
++echo #include "winuser.h" > resources.rc
++echo 1 RT_MANIFEST manifest.xml >> resources.rc
++
++REM Compile resources
++echo Compiling resources...
++rc /nologo resources.rc
++if %ERRORLEVEL% neq 0 (
++    echo ERROR: Resource compilation failed
++    exit /b 1
++)
++
++REM Common compiler flags for size optimization
++set CFLAGS=/nologo /O1 /Os /MT /DNDEBUG /DSCRIPT_WRAPPER /DUNICODE /D_UNICODE /DWIN32_LEAN_AND_MEAN /GL /GS- /Gy
++set LFLAGS=/MACHINE:ARM64 /OPT:REF /OPT:ICF /LTCG advapi32.lib shell32.lib
++
++REM Build CLI version (console application)
++echo Building cli-arm64.exe...
++cl.exe %CFLAGS% launcher.c resources.res /link %LFLAGS% /SUBSYSTEM:CONSOLE /OUT:cli-arm64.exe
++if %ERRORLEVEL% neq 0 (
++    echo ERROR: Failed to build cli-arm64.exe
++    exit /b 1
++)
++
++REM Build GUI version (windows application)
++echo Building gui-arm64.exe...
++cl.exe %CFLAGS% /D_WINDOWS launcher.c resources.res /link %LFLAGS% /SUBSYSTEM:WINDOWS /OUT:gui-arm64.exe
++if %ERRORLEVEL% neq 0 (
++    echo ERROR: Failed to build gui-arm64.exe
++    exit /b 1
++)
++
++REM Show results
++echo.
++echo Build complete:
++dir /b *.exe 2>nul
++for %%F in (cli-arm64.exe gui-arm64.exe) do (
++    if exist %%F (
++        for %%A in (%%F) do echo   %%F: %%~zA bytes
++    )
++)
++
++echo.
++echo To install, copy cli-arm64.exe and gui-arm64.exe to:
++echo   conda_build\cli-arm64.exe
++echo   conda_build\gui-arm64.exe
++
++endlocal
+diff --git a/conda_build/noarch_python.py b/conda_build/noarch_python.py
+index 083ffeb0..352df2d2 100644
+--- a/conda_build/noarch_python.py
++++ b/conda_build/noarch_python.py
+@@ -144,7 +144,7 @@ def transform(m, files, prefix):
+ 
+     # copy in windows exe shims if there are any python-scripts
+     if d["python-scripts"]:
+-        for fn in "cli-32.exe", "cli-64.exe":
++        for fn in "cli-32.exe", "cli-64.exe", "cli-arm64.exe":
+             shutil.copyfile(join(this_dir, fn), join(prefix, fn))
+ 
+     # Read the local _link.py
+diff --git a/tests/test_codesigned.py b/tests/test_codesigned.py
+index 32489f40..230e24f6 100644
+--- a/tests/test_codesigned.py
++++ b/tests/test_codesigned.py
+@@ -87,7 +87,8 @@ def signtool_unsupported() -> bool:
+ 
+ @pytest.mark.skipif(signtool_unsupported(), reason=signtool_unsupported_because())
+ @pytest.mark.parametrize(
+-    "stub_file_name", ["cli-32.exe", "cli-64.exe", "gui-32.exe", "gui-64.exe"]
++    "stub_file_name",
++    ["cli-32.exe", "cli-64.exe", "cli-arm64.exe", "gui-32.exe", "gui-64.exe", "gui-arm64.exe"],
+ )
+ def test_stub_exe_signatures(stub_file_name: str) -> None:
+     """Verify that signtool verifies the signature of the stub exes"""
+-- 
+2.50.1 (Apple Git-155)
+
