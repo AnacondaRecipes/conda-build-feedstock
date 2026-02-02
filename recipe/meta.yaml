@@ -1,7 +1,7 @@
 {% set name = "conda-build" %}
-{% set version = "25.11.1" %}
+{% set version = "26.1.0" %}
 {% set build_number = "0" %}
-{% set sha256 = "c41e1163ff7de7301ead0889a733b5f73ed89fc6c4e8a18d45fa7b8e8ca3bc13" %}
+{% set sha256 = "61021a7d16e640c439248b76585055f498d95fa0db40131516b064141fecf7ba" %}
 
 package:
   name: {{ name }}
@@ -39,8 +39,9 @@ requirements:
     - beautifulsoup4
     - cctools # [osx]
     - chardet
-    - conda >=24.11.0
+    - conda >=25.11.0
     - conda-index >=0.4.0
+    - conda-libmamba-solver >=25.11.0
     - conda-package-handling >=2.2.0
     - evalidate >=2,<3.0a0
     - filelock
