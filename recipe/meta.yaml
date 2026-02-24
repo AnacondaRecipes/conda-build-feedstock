@@ -1,6 +1,6 @@
 {% set name = "conda-build" %}
 {% set version = "26.1.0" %}
-{% set build_number = "0" %}
+{% set build_number = "1" %}
 {% set sha256 = "61021a7d16e640c439248b76585055f498d95fa0db40131516b064141fecf7ba" %}
 
 package:
@@ -47,7 +47,7 @@ requirements:
     - frozendict >=2.4.2
     - jinja2
     - jsonschema >=4.19
-    - m2-patch  >=2.6   # [win]
+    - msys2-patch  >=2.6   # [win]
     - packaging
     - patch     >=2.6   # [not win]
     # Cap to avoid bug where ELF load command is garbled.
