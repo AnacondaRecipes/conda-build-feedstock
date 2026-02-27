@@ -1,7 +1,5 @@
 {% set name = "conda-build" %}
 {% set version = "26.1.0" %}
-{% set build_number = "1" %}
-{% set sha256 = "61021a7d16e640c439248b76585055f498d95fa0db40131516b064141fecf7ba" %}
 
 package:
   name: {{ name }}
@@ -9,11 +7,11 @@ package:
 
 source:
   url: https://github.com/conda/{{ name }}/releases/download/{{ version }}/{{ name }}-{{ version }}.tar.gz
-  sha256: {{ sha256 }}
+  sha256: 61021a7d16e640c439248b76585055f498d95fa0db40131516b064141fecf7ba
 
 build:
   skip: True  # [py<310]
-  number: {{ build_number }}
+  number: 1
   script: {{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv
   entry_points:
     - conda-build = conda_build.cli.main_build:execute
