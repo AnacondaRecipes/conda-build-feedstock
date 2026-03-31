@@ -1,5 +1,5 @@
 {% set name = "conda-build" %}
-{% set version = "26.1.0" %}
+{% set version = "26.3.0" %}
 
 package:
   name: {{ name }}
@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://github.com/conda/{{ name }}/releases/download/{{ version }}/{{ name }}-{{ version }}.tar.gz
-  sha256: 61021a7d16e640c439248b76585055f498d95fa0db40131516b064141fecf7ba
+  sha256: 678670e53d8b7b9a8679996a503e3da44c479a1653939d5ebf72b94bf56f848b
 
 build:
   skip: True  # [py<310]
@@ -59,6 +59,7 @@ requirements:
     - python-libarchive-c
     - pytz
     - pyyaml
+    - rattler-build
     - requests
     - tomli  # [py<311]
     - tqdm
