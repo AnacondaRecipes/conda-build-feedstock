@@ -1,5 +1,5 @@
 {% set name = "conda-build" %}
-{% set version = "26.1.0" %}
+{% set version = "26.3.0" %}
 
 package:
   name: {{ name }}
@@ -7,11 +7,11 @@ package:
 
 source:
   url: https://github.com/conda/{{ name }}/releases/download/{{ version }}/{{ name }}-{{ version }}.tar.gz
-  sha256: 61021a7d16e640c439248b76585055f498d95fa0db40131516b064141fecf7ba
+  sha256: 678670e53d8b7b9a8679996a503e3da44c479a1653939d5ebf72b94bf56f848b
 
 build:
   skip: True  # [py<310]
-  number: 1
+  number: 0
   script: {{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv
   entry_points:
     - conda-build = conda_build.cli.main_build:execute
@@ -24,10 +24,6 @@ build:
     - conda-skeleton = conda_build.cli.main_skeleton:execute
 
 requirements:
-  build:
-    # The build workers have cygwin git already installed so it is not necessary,
-    # see https://github.com/anaconda-distribution/anaconda-linter/issues/189#issue-1568495905
-    - git  # [not win]
   host:
     - python
     - pip
@@ -40,6 +36,7 @@ requirements:
     - conda >=25.11.0
     - conda-index >=0.4.0
     - conda-package-handling >=2.2.0
+    - conda-recipe-manager  # [py>=311]
     - evalidate >=2,<3.0a0
     - filelock
     - frozendict >=2.4.2
@@ -57,8 +54,8 @@ requirements:
     - py-lief
     - python
     - python-libarchive-c
-    - pytz
     - pyyaml
+    - rattler-build
     - requests
     - tomli  # [py<311]
     - tqdm
@@ -73,7 +70,7 @@ test:
     # updated submodules (can be dropped after 1-2 releases)
     - conda_build.index
   requires:
-    - setuptools <75.1.0  # temporary, see https://github.com/conda/conda-build/issues/5493
+    - setuptools
     - pip
   commands:
     - python -m pip check
