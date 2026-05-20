@@ -1,5 +1,5 @@
 {% set name = "conda-build" %}
-{% set version = "26.3.0" %}
+{% set version = "26.5.0" %}
 
 package:
   name: {{ name }}
@@ -7,11 +7,11 @@ package:
 
 source:
   url: https://github.com/conda/{{ name }}/releases/download/{{ version }}/{{ name }}-{{ version }}.tar.gz
-  sha256: 678670e53d8b7b9a8679996a503e3da44c479a1653939d5ebf72b94bf56f848b
+  sha256: ce2c9c2b8e620ab4e533f6e2207b5a0638c2c5575f1797dc8a8bf6e67c55c355
 
 build:
   skip: True  # [py<310]
-  number: 1
+  number: 0
   script: {{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv
   entry_points:
     - conda-build = conda_build.cli.main_build:execute
@@ -51,6 +51,7 @@ requirements:
     - pkginfo
     - psutil
     - py-lief
+    - py-rattler-build >=0.61.4
     - python
     - python-libarchive-c
     - pyyaml
