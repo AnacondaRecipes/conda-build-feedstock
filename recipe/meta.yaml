@@ -10,10 +10,11 @@ source:
   sha256: ce2c9c2b8e620ab4e533f6e2207b5a0638c2c5575f1797dc8a8bf6e67c55c355
   patches:
     - 0001-Add-win-arm64-support.patch
+    - 0002-Fix-win-arm64-console-script-launchers.patch
 
 build:
   skip: True  # [py<310]
-  number: 0
+  number: 1
   script: {{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv  # [not win]
   entry_points:
     - conda-build = conda_build.cli.main_build:execute
