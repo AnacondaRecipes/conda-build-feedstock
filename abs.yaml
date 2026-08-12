@@ -1,3 +1,4 @@
 channels:
+  - bootstrap-win-arm64-round-2-native
   - https://staging.continuum.io/pbp/fs/conda-launchers-feedstock/pr2/96f77aa
   - https://staging.continuum.io/pbp/fs/conda-launchers-feedstock/pr0/96f77aa
