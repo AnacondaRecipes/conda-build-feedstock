@@ -27,8 +27,6 @@ build:
     - conda-skeleton = conda_build.cli.main_skeleton:execute
 
 requirements:
-  build:
-    - git
   host:
     - python
     - pip
