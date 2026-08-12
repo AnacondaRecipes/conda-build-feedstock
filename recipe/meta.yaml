@@ -8,11 +8,14 @@ package:
 source:
   url: https://github.com/conda/{{ name }}/releases/download/{{ version }}/{{ name }}-{{ version }}.tar.gz
   sha256: 92f349f2c3eb79a452bb35f592f40f57c9847c346c8289a3a71237206609970c
+  patches:
+    - 0001-Add-win-arm64-support.patch
+    - 0002-Fix-win-arm64-console-script-launchers.patch
 
 build:
   skip: True  # [py<310]
-  number: 0
-  script: {{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv
+  number: 2
+  script: {{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv  # [not win]
   entry_points:
     - conda-build = conda_build.cli.main_build:execute
     - conda-convert = conda_build.cli.main_convert:execute
@@ -29,7 +32,9 @@ requirements:
     - pip
     - hatchling >=1.12.2
     - hatch-vcs >=0.2.0
+    - conda-launchers 24.7.1.*  # [win]
   run:
+    - conda-launchers 24.7.1.*  # [win]
     - beautifulsoup4
     - cctools # [osx]
     - chardet

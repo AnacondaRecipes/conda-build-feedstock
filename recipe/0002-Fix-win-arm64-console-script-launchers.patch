@@ -1,0 +1,310 @@
+From 6f88eaa0ea19d729aef0c6130f73be1423afcb93 Mon Sep 17 00:00:00 2001
+From: Eric Lundby <Eric.Lundby@gmail.com>
+Date: Wed, 12 Aug 2026 13:38:17 -0600
+Subject: [PATCH 2/2] Fix win-arm64 console script launchers
+
+Resolve Windows CLI launcher stubs from conda-launchers when installed,
+with fallback to stubs bundled in conda-build. Replace pip/distlib
+console-script executables (hard-coded build prefixes) with relocatable
+stubs after install, including on win-arm64.
+---
+ conda_build/build.py                  |   4 +
+ conda_build/utils.py                  |   4 +-
+ conda_build/windows.py                | 147 +++++++++++++++++++++++++-
+ tests/test_windows_console_scripts.py |  75 +++++++++++++
+ 4 files changed, 228 insertions(+), 2 deletions(-)
+ create mode 100644 tests/test_windows_console_scripts.py
+
+diff --git a/conda_build/build.py b/conda_build/build.py
+index da865f7..92e78c9 100644
+--- a/conda_build/build.py
++++ b/conda_build/build.py
+@@ -1644,6 +1644,10 @@ def post_process_files(m: MetaData, initial_prefix_files):
+     # this is new-style noarch, with a value of 'python'
+     if m.noarch != "python":
+         utils.create_entry_points(m.get_value("build/entry_points"), config=m.config)
++    if utils.on_win:
++        from .windows import fix_windows_console_scripts
++
++        fix_windows_console_scripts(join(host_prefix, "Scripts"), m.config)
+     current_prefix_files = utils.prefix_files(prefix=host_prefix)
+ 
+     python = (
+diff --git a/conda_build/utils.py b/conda_build/utils.py
+index 8105514..da2567a 100644
+--- a/conda_build/utils.py
++++ b/conda_build/utils.py
+@@ -1083,6 +1083,8 @@ def iter_entry_points(items):
+ 
+ def create_entry_point(path, module, func, config):
+     """Creates an entry point for legacy noarch_python builds"""
++    from .windows import get_windows_cli_launcher
++
+     import_name = func.split(".")[0]
+     pyscript = PY_TMPL % {"module": module, "func": func, "import_name": import_name}
+     if on_win:
+@@ -1091,7 +1093,7 @@ def create_entry_point(path, module, func, config):
+                 fo.write("#!python_d\n")
+             fo.write(pyscript)
+             copy_into(
+-                join(dirname(__file__), f"cli-{str(config.host_arch)}.exe"),
++                get_windows_cli_launcher(config),
+                 path + ".exe",
+                 config.timeout,
+             )
+diff --git a/conda_build/windows.py b/conda_build/windows.py
+index 4302b39..caab30e 100644
+--- a/conda_build/windows.py
++++ b/conda_build/windows.py
+@@ -31,6 +31,7 @@ except:
+     pass
+ 
+ from . import environ
++from .exceptions import CondaBuildException
+ from .utils import (
+     check_call_env,
+     copy_into,
+@@ -53,6 +54,150 @@ VS_VERSION_STRING = {
+ }
+ 
+ 
++def _conda_launchers_dir():
++    """Return share/conda-launchers from an installed conda-launchers package."""
++    import sys
++
++    prefixes = []
++    for prefix in (os.environ.get("CONDA_PREFIX"), sys.prefix):
++        if prefix and prefix not in prefixes:
++            prefixes.append(prefix)
++    for prefix in prefixes:
++        launchers_dir = join(prefix, "share", "conda-launchers")
++        if isdir(launchers_dir):
++            return launchers_dir
++    return None
++
++
++def get_windows_cli_launcher(config):
++    """Return the path to the CLI launcher stub for the current host platform."""
++    log = get_logger(__name__)
++    exe_directory = dirname(__file__)
++    arch = str(config.host_arch)
++    launchers_dir = _conda_launchers_dir()
++    if launchers_dir:
++        launcher = join(launchers_dir, f"cli-{arch}.exe")
++        if isfile(launcher):
++            return launcher
++    launcher = join(exe_directory, f"cli-{arch}.exe")
++    if isfile(launcher):
++        return launcher
++    if arch == "arm64" and isfile(join(exe_directory, "cli-64.exe")):
++        log.warning(
++            "cli-arm64.exe not found; falling back to cli-64.exe "
++            "(runs under x64 emulation on Windows ARM64)"
++        )
++        return join(exe_directory, "cli-64.exe")
++    raise CondaBuildException(
++        f"Cannot find Windows CLI launcher stub cli-{arch}.exe in conda-build."
++    )
++
++
++def _strip_python_shebang_from_script(script_path):
++    with open(script_path, "rb") as f:
++        data = f.read()
++    if not data.startswith(b"#!"):
++        return
++    newline = b"\n" if b"\n" in data.splitlines(True)[0] else b"\r\n"
++    first_line_end = data.find(newline)
++    if first_line_end == -1 or b"python" not in data[:first_line_end].lower():
++        return
++    print(f"Removing hard-coded shebang from {os.path.basename(script_path)}")
++    with open(script_path, "wb") as f:
++        f.write(data[first_line_end + len(newline) :])
++
++
++def _extract_script_from_pip_launcher(exe_path):
++    """Extract the Python script embedded in pip's zip-based Windows launcher."""
++    with open(exe_path, "rb") as f:
++        data = f.read()
++    marker = b"__main__.py"
++    idx = 0
++    while True:
++        idx = data.find(marker, idx)
++        if idx == -1:
++            return None
++        start = idx + len(marker)
++        # Skip zip central-directory entries where the marker is not followed by code.
++        if data.startswith(b"PK", start):
++            idx = start
++            continue
++        end = data.find(b"\nPK", start)
++        if end == -1:
++            end = data.find(b"PK\x05\x06", start)
++        if end == -1:
++            end = len(data)
++        try:
++            script = data[start:end].decode("utf-8")
++        except UnicodeDecodeError:
++            idx = start
++            continue
++        if script.strip():
++            return script
++        idx = start
++
++
++def _exe_has_build_prefix(exe_data, prefix_variants):
++    if b"_h_env" in exe_data:
++        return True
++    return any(v.encode("utf-8") in exe_data for v in prefix_variants)
++
++
++def fix_windows_console_scripts(scripts_dir, config):
++    """Replace pip/distlib console script launchers with relocatable CLI stubs."""
++    if not isdir(scripts_dir):
++        return
++
++    launcher = get_windows_cli_launcher(config)
++    prefix = config.host_prefix
++    prefix_u = prefix.replace("\\", "/")
++    prefix_variants = {
++        prefix,
++        prefix_u,
++        prefix[0].upper() + prefix[1:],
++        prefix[0].lower() + prefix[1:],
++        prefix_u[0].upper() + prefix_u[1:],
++        prefix_u[0].lower() + prefix_u[1:],
++    }
++
++    for fn in os.listdir(scripts_dir):
++        if not fn.endswith(".exe") or not isfile(join(scripts_dir, fn)):
++            continue
++
++        exe_path = join(scripts_dir, fn)
++        script_path = join(scripts_dir, fn[:-4] + "-script.py")
++
++        with open(exe_path, "rb") as f:
++            exe_data = f.read()
++
++        # pip/distlib launchers are much larger than conda-build's ~50KB stubs.
++        is_pip_launcher = len(exe_data) > 100000 or _exe_has_build_prefix(
++            exe_data, prefix_variants
++        )
++        if not is_pip_launcher:
++            if isfile(script_path):
++                _strip_python_shebang_from_script(script_path)
++            continue
++
++        print(f"Fixing Windows console script launcher: {fn}")
++        if not isfile(script_path):
++            extracted = _extract_script_from_pip_launcher(exe_path)
++            if extracted:
++                with open(script_path, "w", encoding="utf-8") as fo:
++                    fo.write(extracted)
++            else:
++                log = get_logger(__name__)
++                log.warning(
++                    "Could not extract script for %s; declare build/entry_points "
++                    "in meta.yaml or ensure a matching *-script.py exists",
++                    fn,
++                )
++                continue
++
++        _strip_python_shebang_from_script(script_path)
++        copy_into(launcher, exe_path, config.timeout)
++
++
+ def fix_staged_scripts(scripts_dir, config):
+     """
+     Fixes scripts which have been installed unix-style to have a .bat
+@@ -77,7 +222,7 @@ def fix_staged_scripts(scripts_dir, config):
+                 fo.write(f.read())
+             # now create the .exe file
+             copy_into(
+-                join(dirname(__file__), f"cli-{config.host_arch}.exe"),
++                get_windows_cli_launcher(config),
+                 join(scripts_dir, fn + ".exe"),
+             )
+ 
+diff --git a/tests/test_windows_console_scripts.py b/tests/test_windows_console_scripts.py
+new file mode 100644
+index 0000000..94059f5
+--- /dev/null
++++ b/tests/test_windows_console_scripts.py
+@@ -0,0 +1,75 @@
++import os
++import shutil
++import tempfile
++
++import pytest
++
++from conda_build.config import Config
++from conda_build.utils import on_win
++from conda_build.windows import (
++    _extract_script_from_pip_launcher,
++    fix_windows_console_scripts,
++    get_windows_cli_launcher,
++)
++
++
++@pytest.mark.skipif(not on_win, reason="Windows-only")
++def test_get_windows_cli_launcher_arm64_fallback():
++    config = Config()
++    config._host_arch = "arm64"
++    launcher = get_windows_cli_launcher(config)
++    assert os.path.isfile(launcher)
++    assert launcher.endswith(".exe")
++
++
++@pytest.mark.skipif(not on_win, reason="Windows-only")
++def test_extract_script_from_pip_launcher():
++    payload = (
++        b"prefix path _h_env\\python.exe\n"
++        b"PK\x03\x04\x14\x00\x00\x00\x00\x00"
++        b"__main__.pyimport sys\nprint('hi')\n"
++        b"PK\x01\x02"
++        b"__main__.pyPK\x05\x06"
++    )
++    with tempfile.NamedTemporaryFile(suffix=".exe", delete=False) as fo:
++        fo.write(payload)
++        path = fo.name
++    try:
++        extracted = _extract_script_from_pip_launcher(path)
++        assert extracted == "import sys\nprint('hi')\n"
++    finally:
++        os.unlink(path)
++
++
++@pytest.mark.skipif(not on_win, reason="Windows-only")
++def test_fix_windows_console_scripts_replaces_pip_launcher():
++    payload = (
++        b"MZ"
++        + b"\x00" * 182800
++        + b"C:\\build\\croot\\pkg_123\\_h_env\\python.exe\n"
++        b"PK\x03\x04\x14\x00\x00\x00\x00\x00"
++        b"__main__.pyimport sys\nfrom pkg import main\n"
++        b"if __name__ == '__main__':\n    main()\n"
++        b"PK\x01\x02"
++        b"__main__.pyPK\x05\x06"
++    )
++    tmpdir = tempfile.mkdtemp()
++    try:
++        scripts = os.path.join(tmpdir, "Scripts")
++        os.makedirs(scripts)
++        exe_path = os.path.join(scripts, "pkg.exe")
++        with open(exe_path, "wb") as fo:
++            fo.write(payload)
++
++        config = Config(croot=tmpdir)
++        config._host_prefix = tmpdir
++        config._host_arch = "arm64"
++
++        fix_windows_console_scripts(scripts, config)
++
++        data = open(exe_path, "rb").read()
++        assert b"_h_env" not in data
++        assert len(data) < 100000
++        assert os.path.isfile(os.path.join(scripts, "pkg-script.py"))
++    finally:
++        shutil.rmtree(tmpdir, ignore_errors=True)
+-- 
+2.50.1 (Apple Git-155)
+
