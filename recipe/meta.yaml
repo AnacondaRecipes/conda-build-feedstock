@@ -14,7 +14,7 @@ source:
 
 build:
   skip: True  # [py<310]
-  number: 1
+  number: 2
   script: {{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv  # [not win]
   entry_points:
     - conda-build = conda_build.cli.main_build:execute
@@ -28,16 +28,15 @@ build:
 
 requirements:
   build:
-    # The build workers have cygwin git already installed so it is not necessary,
-    # see https://github.com/anaconda-distribution/anaconda-linter/issues/189#issue-1568495905
-    - git  # [not win]
-    - {{ compiler('cxx') }}  # [win]
+    - git
   host:
     - python
     - pip
     - hatchling >=1.12.2
     - hatch-vcs >=0.2.0
+    - conda-launchers 24.7.1.*  # [win]
   run:
+    - conda-launchers 24.7.1.*  # [win]
     - beautifulsoup4
     - cctools # [osx]
     - chardet

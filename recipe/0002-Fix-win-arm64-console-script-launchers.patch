@@ -47,15 +47,35 @@ index f9234f9..83cfe9c 100644
  from .utils import (
      check_call_env,
      copy_into,
-@@ -42,6 +43,130 @@ VS_VERSION_STRING = {
+@@ -42,6 +43,150 @@ VS_VERSION_STRING = {
  }
  
  
++def _conda_launchers_dir():
++    """Return share/conda-launchers from an installed conda-launchers package."""
++    import sys
++
++    prefixes = []
++    for prefix in (os.environ.get("CONDA_PREFIX"), sys.prefix):
++        if prefix and prefix not in prefixes:
++            prefixes.append(prefix)
++    for prefix in prefixes:
++        launchers_dir = join(prefix, "share", "conda-launchers")
++        if isdir(launchers_dir):
++            return launchers_dir
++    return None
++
++
 +def get_windows_cli_launcher(config):
 +    """Return the path to the CLI launcher stub for the current host platform."""
 +    log = get_logger(__name__)
 +    exe_directory = dirname(__file__)
 +    arch = str(config.host_arch)
++    launchers_dir = _conda_launchers_dir()
++    if launchers_dir:
++        launcher = join(launchers_dir, f"cli-{arch}.exe")
++        if isfile(launcher):
++            return launcher
 +    launcher = join(exe_directory, f"cli-{arch}.exe")
 +    if isfile(launcher):
 +        return launcher
