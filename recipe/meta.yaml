@@ -14,7 +14,7 @@ source:
 
 build:
   skip: True  # [py<310]
-  number: 3
+  number: 4
   script: {{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv  # [not win]
   entry_points:
     - conda-build = conda_build.cli.main_build:execute
