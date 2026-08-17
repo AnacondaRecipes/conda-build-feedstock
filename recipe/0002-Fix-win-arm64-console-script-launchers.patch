@@ -1,23 +1,23 @@
-diff --git a/conda_build/build.py b/conda_build/build.py
-index 4441c4a..55da44a 100644
 --- a/conda_build/build.py
 +++ b/conda_build/build.py
-@@ -1639,6 +1639,10 @@ def post_process_files(m: MetaData, initial_prefix_files):
+@@ -1639,6 +1639,14 @@
      # this is new-style noarch, with a value of 'python'
      if m.noarch != "python":
          utils.create_entry_points(m.get_value("build/entry_points"), config=m.config)
 +    if utils.on_win:
 +        from .windows import fix_windows_console_scripts
 +
-+        fix_windows_console_scripts(join(host_prefix, "Scripts"), m.config)
++        fix_windows_console_scripts(
++            join(host_prefix, "Scripts"),
++            m.config,
++            initial_prefix_files=initial_prefix_files,
++        )
      current_prefix_files = utils.prefix_files(prefix=host_prefix)
  
      python = (
-diff --git a/conda_build/utils.py b/conda_build/utils.py
-index b4489cf..42393b8 100644
 --- a/conda_build/utils.py
 +++ b/conda_build/utils.py
-@@ -1081,6 +1081,8 @@ def iter_entry_points(items):
+@@ -1081,6 +1081,8 @@
  
  def create_entry_point(path, module, func, config):
      """Creates an entry point for legacy noarch_python builds"""
@@ -26,7 +26,7 @@ index b4489cf..42393b8 100644
      import_name = func.split(".")[0]
      pyscript = PY_TMPL % {"module": module, "func": func, "import_name": import_name}
      if on_win:
-@@ -1089,7 +1091,7 @@ def create_entry_point(path, module, func, config):
+@@ -1089,7 +1091,7 @@
                  fo.write("#!python_d\n")
              fo.write(pyscript)
              copy_into(
@@ -35,11 +35,9 @@ index b4489cf..42393b8 100644
                  path + ".exe",
                  config.timeout,
              )
-diff --git a/conda_build/windows.py b/conda_build/windows.py
-index f9234f9..83cfe9c 100644
 --- a/conda_build/windows.py
 +++ b/conda_build/windows.py
-@@ -20,6 +20,7 @@ except:
+@@ -20,6 +20,7 @@
      pass
  
  from . import environ
@@ -47,10 +45,11 @@ index f9234f9..83cfe9c 100644
  from .utils import (
      check_call_env,
      copy_into,
-@@ -42,6 +43,130 @@ VS_VERSION_STRING = {
+@@ -40,6 +41,141 @@
+     "16.0": "Visual Studio 16 2019",
+     "17.0": "Visual Studio 17 2022",
  }
- 
- 
++
 +def get_windows_cli_launcher(config):
 +    """Return the path to the CLI launcher stub for the current host platform."""
 +    log = get_logger(__name__)
@@ -120,11 +119,17 @@ index f9234f9..83cfe9c 100644
 +    return any(v.encode("utf-8") in exe_data for v in prefix_variants)
 +
 +
-+def fix_windows_console_scripts(scripts_dir, config):
-+    """Replace pip/distlib console script launchers with relocatable CLI stubs."""
++def fix_windows_console_scripts(scripts_dir, config, initial_prefix_files=None):
++    """Replace pip/distlib console script launchers with relocatable CLI stubs.
++
++    Only processes console scripts installed by the current build. Host-only
++    scripts from build dependencies (e.g. setuptools-scm) must be left alone;
++    otherwise newly created *-script.py files are picked up as package output.
++    """
 +    if not isdir(scripts_dir):
 +        return
 +
++    initial_prefix_files = initial_prefix_files or set()
 +    launcher = get_windows_cli_launcher(config)
 +    prefix = config.host_prefix
 +    prefix_u = prefix.replace("\\", "/")
@@ -139,6 +144,10 @@ index f9234f9..83cfe9c 100644
 +
 +    for fn in os.listdir(scripts_dir):
 +        if not fn.endswith(".exe") or not isfile(join(scripts_dir, fn)):
++            continue
++
++        rel_exe = join("Scripts", fn)
++        if rel_exe in initial_prefix_files or rel_exe.replace("\\", "/") in initial_prefix_files:
 +            continue
 +
 +        exe_path = join(scripts_dir, fn)
@@ -175,10 +184,10 @@ index f9234f9..83cfe9c 100644
 +        copy_into(launcher, exe_path, config.timeout)
 +
 +
+ 
+ 
  def fix_staged_scripts(scripts_dir, config):
-     """
-     Fixes scripts which have been installed unix-style to have a .bat
-@@ -66,7 +191,7 @@ def fix_staged_scripts(scripts_dir, config):
+@@ -66,7 +202,7 @@
                  fo.write(f.read())
              # now create the .exe file
              copy_into(
@@ -187,12 +196,9 @@ index f9234f9..83cfe9c 100644
                  join(scripts_dir, fn + ".exe"),
              )
  
-diff --git a/tests/test_windows_console_scripts.py b/tests/test_windows_console_scripts.py
-new file mode 100644
-index 0000000..94059f5
---- /dev/null
+--- a/tests/test_windows_console_scripts.py
 +++ b/tests/test_windows_console_scripts.py
-@@ -0,0 +1,75 @@
+@@ -0,0 +1,100 @@
 +import os
 +import shutil
 +import tempfile
@@ -234,6 +240,31 @@ index 0000000..94059f5
 +        assert extracted == "import sys\nprint('hi')\n"
 +    finally:
 +        os.unlink(path)
++
++
++@pytest.mark.skipif(not on_win, reason="Windows-only")
++def test_fix_windows_console_scripts_skips_host_scripts():
++    tmpdir = tempfile.mkdtemp()
++    try:
++        scripts = os.path.join(tmpdir, "Scripts")
++        os.makedirs(scripts)
++        exe_path = os.path.join(scripts, "setuptools-scm.exe")
++        with open(exe_path, "wb") as fo:
++            fo.write(b"MZ" + b"\x00" * 182800 + b"C:\\build\\_h_env\\python.exe\n")
++
++        config = Config(croot=tmpdir)
++        config._host_prefix = tmpdir
++        config._host_arch = "arm64"
++
++        fix_windows_console_scripts(
++            scripts,
++            config,
++            initial_prefix_files={"Scripts/setuptools-scm.exe"},
++        )
++
++        assert not os.path.isfile(os.path.join(scripts, "setuptools-scm-script.py"))
++    finally:
++        shutil.rmtree(tmpdir, ignore_errors=True)
 +
 +
 +@pytest.mark.skipif(not on_win, reason="Windows-only")
