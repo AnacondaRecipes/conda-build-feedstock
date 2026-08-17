@@ -1,6 +1,13 @@
 --- a/conda_build/build.py
 +++ b/conda_build/build.py
-@@ -1649,6 +1649,14 @@
+@@ -1646,9 +1646,21 @@
+     get_build_metadata(m)
+     create_post_scripts(m)
+ 
++    new_script_files = None
++    if utils.on_win:
++        new_script_files = utils.prefix_files(prefix=host_prefix) - initial_prefix_files
++
      # this is new-style noarch, with a value of 'python'
      if m.noarch != "python":
          utils.create_entry_points(m.get_value("build/entry_points"), config=m.config)
@@ -10,7 +17,7 @@
 +        fix_windows_console_scripts(
 +            join(host_prefix, "Scripts"),
 +            m.config,
-+            initial_prefix_files=initial_prefix_files,
++            files_to_fix=new_script_files,
 +        )
      current_prefix_files = utils.prefix_files(prefix=host_prefix)
  
@@ -45,7 +52,7 @@
  from .utils import (
      check_call_env,
      copy_into,
-@@ -40,6 +41,140 @@
+@@ -40,6 +41,159 @@
      "16.0": "Visual Studio 16 2019",
      "17.0": "Visual Studio 17 2022",
  }
@@ -67,6 +74,11 @@
 +    raise CondaBuildException(
 +        f"Cannot find Windows CLI launcher stub cli-{arch}.exe in conda-build."
 +    )
++
++
++def _normalize_scripts_relpath(path):
++    path = path.replace("/", os.sep)
++    return os.path.normcase(os.path.normpath(path))
 +
 +
 +def _strip_python_shebang_from_script(script_path):
@@ -94,7 +106,6 @@
 +        if idx == -1:
 +            return None
 +        start = idx + len(marker)
-+        # Skip zip central-directory entries where the marker is not followed by code.
 +        if data.startswith(b"PK", start):
 +            idx = start
 +            continue
@@ -119,18 +130,32 @@
 +    return any(v.encode("utf-8") in exe_data for v in prefix_variants)
 +
 +
-+def fix_windows_console_scripts(scripts_dir, config, initial_prefix_files=None):
++def _is_pip_launcher(exe_data, prefix_variants):
++    if _exe_has_build_prefix(exe_data, prefix_variants):
++        return True
++    if b"__main__.py" not in exe_data:
++        return False
++    return b"PK\x03\x04" in exe_data or b"PK\x01\x02" in exe_data
++
++
++def fix_windows_console_scripts(scripts_dir, config, files_to_fix=None):
 +    """Replace pip/distlib console script launchers with relocatable CLI stubs.
 +
-+    Only processes console scripts installed by the current build. Host-only
-+    scripts from build dependencies (e.g. setuptools-scm) must be left alone;
-+    otherwise newly created *-script.py files are picked up as package output.
++    Only processes console scripts installed by the current build (paths in
++    files_to_fix). Host-only scripts from build dependencies (e.g.
++    setuptools-scm) are left alone so newly created *-script.py files are not
++    packaged.
 +    """
 +    if not isdir(scripts_dir):
 +        return
 +
-+    initial_prefix_files = initial_prefix_files or set()
++    files_to_fix = files_to_fix or set()
++    files_to_fix = {_normalize_scripts_relpath(p) for p in files_to_fix}
++
 +    launcher = get_windows_cli_launcher(config)
++    with open(launcher, "rb") as f:
++        launcher_bytes = f.read()
++
 +    prefix = config.host_prefix
 +    prefix_u = prefix.replace("\\", "/")
 +    prefix_variants = {
@@ -146,8 +171,8 @@
 +        if not fn.endswith(".exe") or not isfile(join(scripts_dir, fn)):
 +            continue
 +
-+        rel_exe = join("Scripts", fn)
-+        if rel_exe in initial_prefix_files or rel_exe.replace("\\", "/") in initial_prefix_files:
++        rel_exe = _normalize_scripts_relpath(join("Scripts", fn))
++        if files_to_fix and rel_exe not in files_to_fix:
 +            continue
 +
 +        exe_path = join(scripts_dir, fn)
@@ -156,11 +181,12 @@
 +        with open(exe_path, "rb") as f:
 +            exe_data = f.read()
 +
-+        # pip/distlib launchers are much larger than conda-build's ~50KB stubs.
-+        is_pip_launcher = len(exe_data) > 100000 or _exe_has_build_prefix(
-+            exe_data, prefix_variants
-+        )
-+        if not is_pip_launcher:
++        if exe_data == launcher_bytes:
++            if isfile(script_path):
++                _strip_python_shebang_from_script(script_path)
++            continue
++
++        if not _is_pip_launcher(exe_data, prefix_variants):
 +            if isfile(script_path):
 +                _strip_python_shebang_from_script(script_path)
 +            continue
@@ -186,7 +212,7 @@
  
  
  def fix_staged_scripts(scripts_dir, config):
-@@ -66,7 +201,7 @@
+@@ -66,7 +220,7 @@
                  fo.write(f.read())
              # now create the .exe file
              copy_into(
@@ -197,7 +223,7 @@
  
 --- a/tests/test_windows_console_scripts.py
 +++ b/tests/test_windows_console_scripts.py
-@@ -0,0 +1,100 @@
+@@ -0,0 +1,126 @@
 +import os
 +import shutil
 +import tempfile
@@ -208,6 +234,7 @@
 +from conda_build.utils import on_win
 +from conda_build.windows import (
 +    _extract_script_from_pip_launcher,
++    _is_pip_launcher,
 +    fix_windows_console_scripts,
 +    get_windows_cli_launcher,
 +)
@@ -237,6 +264,7 @@
 +    try:
 +        extracted = _extract_script_from_pip_launcher(path)
 +        assert extracted == "import sys\nprint('hi')\n"
++        assert _is_pip_launcher(payload, set())
 +    finally:
 +        os.unlink(path)
 +
@@ -255,11 +283,7 @@
 +        config._host_prefix = tmpdir
 +        config._host_arch = "arm64"
 +
-+        fix_windows_console_scripts(
-+            scripts,
-+            config,
-+            initial_prefix_files={"Scripts/setuptools-scm.exe"},
-+        )
++        fix_windows_console_scripts(scripts, config, files_to_fix=set())
 +
 +        assert not os.path.isfile(os.path.join(scripts, "setuptools-scm-script.py"))
 +    finally:
@@ -289,12 +313,40 @@
 +        config = Config(croot=tmpdir)
 +        config._host_prefix = tmpdir
 +        config._host_arch = "arm64"
++        launcher = open(get_windows_cli_launcher(config), "rb").read()
 +
-+        fix_windows_console_scripts(scripts, config)
++        fix_windows_console_scripts(
++            scripts, config, files_to_fix={"Scripts/pkg.exe"}
++        )
 +
 +        data = open(exe_path, "rb").read()
-+        assert b"_h_env" not in data
-+        assert len(data) < 100000
++        assert data == launcher
 +        assert os.path.isfile(os.path.join(scripts, "pkg-script.py"))
++    finally:
++        shutil.rmtree(tmpdir, ignore_errors=True)
++
++
++@pytest.mark.skipif(not on_win, reason="Windows-only")
++def test_fix_windows_console_scripts_leaves_conda_stub_alone():
++    tmpdir = tempfile.mkdtemp()
++    try:
++        scripts = os.path.join(tmpdir, "Scripts")
++        os.makedirs(scripts)
++        config = Config(croot=tmpdir)
++        config._host_prefix = tmpdir
++        config._host_arch = "arm64"
++        launcher_path = get_windows_cli_launcher(config)
++        exe_path = os.path.join(scripts, "pytest.exe")
++        shutil.copyfile(launcher_path, exe_path)
++        script_path = os.path.join(scripts, "pytest-script.py")
++        with open(script_path, "w", encoding="utf-8") as fo:
++            fo.write("print('ok')\n")
++        before = open(exe_path, "rb").read()
++
++        fix_windows_console_scripts(
++            scripts, config, files_to_fix={"Scripts/pytest.exe"}
++        )
++
++        assert open(exe_path, "rb").read() == before
 +    finally:
 +        shutil.rmtree(tmpdir, ignore_errors=True)
