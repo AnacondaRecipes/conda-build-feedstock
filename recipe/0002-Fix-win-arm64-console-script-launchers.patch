@@ -1,8 +1,6 @@
-diff --git a/conda_build/build.py b/conda_build/build.py
-index 4441c4a..55da44a 100644
 --- a/conda_build/build.py
 +++ b/conda_build/build.py
-@@ -1639,6 +1639,10 @@ def post_process_files(m: MetaData, initial_prefix_files):
+@@ -1649,6 +1649,14 @@
      # this is new-style noarch, with a value of 'python'
      if m.noarch != "python":
          utils.create_entry_points(m.get_value("build/entry_points"), config=m.config)
@@ -17,11 +15,9 @@ index 4441c4a..55da44a 100644
      current_prefix_files = utils.prefix_files(prefix=host_prefix)
  
      python = (
-diff --git a/conda_build/utils.py b/conda_build/utils.py
-index b4489cf..42393b8 100644
 --- a/conda_build/utils.py
 +++ b/conda_build/utils.py
-@@ -1081,6 +1081,8 @@ def iter_entry_points(items):
+@@ -1083,6 +1083,8 @@
  
  def create_entry_point(path, module, func, config):
      """Creates an entry point for legacy noarch_python builds"""
@@ -30,7 +26,7 @@ index b4489cf..42393b8 100644
      import_name = func.split(".")[0]
      pyscript = PY_TMPL % {"module": module, "func": func, "import_name": import_name}
      if on_win:
-@@ -1089,7 +1091,7 @@ def create_entry_point(path, module, func, config):
+@@ -1091,7 +1093,7 @@
                  fo.write("#!python_d\n")
              fo.write(pyscript)
              copy_into(
@@ -39,11 +35,9 @@ index b4489cf..42393b8 100644
                  path + ".exe",
                  config.timeout,
              )
-diff --git a/conda_build/windows.py b/conda_build/windows.py
-index f9234f9..83cfe9c 100644
 --- a/conda_build/windows.py
 +++ b/conda_build/windows.py
-@@ -20,6 +20,7 @@ except:
+@@ -20,6 +20,7 @@
      pass
  
  from . import environ
@@ -51,10 +45,11 @@ index f9234f9..83cfe9c 100644
  from .utils import (
      check_call_env,
      copy_into,
-@@ -42,6 +43,130 @@ VS_VERSION_STRING = {
+@@ -40,6 +41,140 @@
+     "16.0": "Visual Studio 16 2019",
+     "17.0": "Visual Studio 17 2022",
  }
- 
- 
++
 +def get_windows_cli_launcher(config):
 +    """Return the path to the CLI launcher stub for the current host platform."""
 +    log = get_logger(__name__)
@@ -188,11 +183,10 @@ index f9234f9..83cfe9c 100644
 +        _strip_python_shebang_from_script(script_path)
 +        copy_into(launcher, exe_path, config.timeout)
 +
-+
+ 
+ 
  def fix_staged_scripts(scripts_dir, config):
-     """
-     Fixes scripts which have been installed unix-style to have a .bat
-@@ -66,7 +191,7 @@ def fix_staged_scripts(scripts_dir, config):
+@@ -66,7 +201,7 @@
                  fo.write(f.read())
              # now create the .exe file
              copy_into(
@@ -201,12 +195,9 @@ index f9234f9..83cfe9c 100644
                  join(scripts_dir, fn + ".exe"),
              )
  
-diff --git a/tests/test_windows_console_scripts.py b/tests/test_windows_console_scripts.py
-new file mode 100644
-index 0000000..94059f5
---- /dev/null
+--- a/tests/test_windows_console_scripts.py
 +++ b/tests/test_windows_console_scripts.py
-@@ -0,0 +1,75 @@
+@@ -0,0 +1,100 @@
 +import os
 +import shutil
 +import tempfile
