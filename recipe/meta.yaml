@@ -1,5 +1,5 @@
 {% set name = "conda-build" %}
-{% set version = "26.3.0" %}
+{% set version = "26.7.1" %}
 
 package:
   name: {{ name }}
@@ -7,14 +7,14 @@ package:
 
 source:
   url: https://github.com/conda/{{ name }}/releases/download/{{ version }}/{{ name }}-{{ version }}.tar.gz
-  sha256: 678670e53d8b7b9a8679996a503e3da44c479a1653939d5ebf72b94bf56f848b
+  sha256: a49ee8d6611adcf0c48ffac5d0e26083cf27e209d340f601299ef9306abfc858
   patches:
     - 0001-Add-win-arm64-support.patch
     - 0002-Fix-win-arm64-console-script-launchers.patch
 
 build:
   skip: True  # [py<310]
-  number: 4
+  number: 0
   script: {{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv  # [not win]
   entry_points:
     - conda-build = conda_build.cli.main_build:execute

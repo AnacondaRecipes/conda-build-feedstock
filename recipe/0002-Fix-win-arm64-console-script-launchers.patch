@@ -1,6 +1,21 @@
+From 9af022ea834c4c1069ccf08469c5e6f2ae4e48f2 Mon Sep 17 00:00:00 2001
+From: Eric Lundby <Eric.Lundby@gmail.com>
+Date: Fri, 21 Aug 2026 14:41:31 -0600
+Subject: [PATCH] Fix win-arm64 console script launchers
+
+---
+ conda_build/build.py                  |  12 ++
+ conda_build/utils.py                  |   6 +-
+ conda_build/windows.py                | 159 +++++++++++++++++++++++++-
+ tests/test_windows_console_scripts.py | 126 ++++++++++++++++++++
+ 4 files changed, 297 insertions(+), 6 deletions(-)
+ create mode 100644 tests/test_windows_console_scripts.py
+
+diff --git a/conda_build/build.py b/conda_build/build.py
+index 3667345a..946cf16a 100644
 --- a/conda_build/build.py
 +++ b/conda_build/build.py
-@@ -1636,9 +1636,21 @@
+@@ -1641,9 +1641,21 @@ def post_process_files(m: MetaData, initial_prefix_files):
      get_build_metadata(m)
      create_post_scripts(m)
  
@@ -22,9 +37,11 @@
      current_prefix_files = utils.prefix_files(prefix=host_prefix)
  
      python = (
+diff --git a/conda_build/utils.py b/conda_build/utils.py
+index d2ef77d8..da2567a4 100644
 --- a/conda_build/utils.py
 +++ b/conda_build/utils.py
-@@ -1081,6 +1081,8 @@
+@@ -1083,6 +1083,8 @@ def iter_entry_points(items):
  
  def create_entry_point(path, module, func, config):
      """Creates an entry point for legacy noarch_python builds"""
@@ -33,30 +50,26 @@
      import_name = func.split(".")[0]
      pyscript = PY_TMPL % {"module": module, "func": func, "import_name": import_name}
      if on_win:
-@@ -1089,7 +1091,7 @@
+@@ -1090,10 +1092,8 @@ def create_entry_point(path, module, func, config):
+             if os.path.isfile(os.path.join(config.host_prefix, "python_d.exe")):
                  fo.write("#!python_d\n")
              fo.write(pyscript)
+-            # FIXME: Update once win-arm64 native launcher is available
+-            host_arch = "64" if config.host_arch == "arm64" else str(config.host_arch)
              copy_into(
--                join(dirname(__file__), f"cli-{str(config.host_arch)}.exe"),
+-                join(dirname(__file__), f"cli-{host_arch}.exe"),
 +                get_windows_cli_launcher(config),
                  path + ".exe",
                  config.timeout,
              )
+diff --git a/conda_build/windows.py b/conda_build/windows.py
+index f6fb1726..13c24722 100644
 --- a/conda_build/windows.py
 +++ b/conda_build/windows.py
-@@ -20,6 +20,7 @@
-     pass
- 
- from . import environ
-+from .exceptions import CondaBuildException
- from .utils import (
-     check_call_env,
-     copy_into,
-@@ -40,6 +41,159 @@
-     "16.0": "Visual Studio 16 2019",
-     "17.0": "Visual Studio 17 2022",
+@@ -55,6 +55,161 @@ VS_VERSION_STRING = {
  }
-+
+ 
+ 
 +def get_windows_cli_launcher(config):
 +    """Return the path to the CLI launcher stub for the current host platform."""
 +    log = get_logger(__name__)
@@ -71,6 +84,8 @@
 +            "(runs under x64 emulation on Windows ARM64)"
 +        )
 +        return join(exe_directory, "cli-64.exe")
++    from .exceptions import CondaBuildException
++
 +    raise CondaBuildException(
 +        f"Cannot find Windows CLI launcher stub cli-{arch}.exe in conda-build."
 +    )
@@ -209,19 +224,26 @@
 +        _strip_python_shebang_from_script(script_path)
 +        copy_into(launcher, exe_path, config.timeout)
 +
- 
- 
++
  def fix_staged_scripts(scripts_dir, config):
-@@ -66,7 +220,7 @@
+     """
+     Fixes scripts which have been installed unix-style to have a .bat
+@@ -78,10 +233,8 @@ def fix_staged_scripts(scripts_dir, config):
+             with open(join(scripts_dir, fn + "-script.py"), "wb") as fo:
                  fo.write(f.read())
              # now create the .exe file
+-            # FIXME: Update once win-arm64 native launcher is available
+-            host_arch = "64" if config.host_arch == "arm64" else str(config.host_arch)
              copy_into(
--                join(dirname(__file__), f"cli-{config.host_arch}.exe"),
+-                join(dirname(__file__), f"cli-{host_arch}.exe"),
 +                get_windows_cli_launcher(config),
                  join(scripts_dir, fn + ".exe"),
              )
  
---- a/tests/test_windows_console_scripts.py
+diff --git a/tests/test_windows_console_scripts.py b/tests/test_windows_console_scripts.py
+new file mode 100644
+index 00000000..24da7d73
+--- /dev/null
 +++ b/tests/test_windows_console_scripts.py
 @@ -0,0 +1,126 @@
 +import os
@@ -350,3 +372,6 @@
 +        assert open(exe_path, "rb").read() == before
 +    finally:
 +        shutil.rmtree(tmpdir, ignore_errors=True)
+-- 
+2.53.0.windows.1
+

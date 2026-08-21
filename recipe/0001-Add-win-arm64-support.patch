@@ -1,21 +1,21 @@
-From be32511dff1b42578a59e437359447ef21f344b7 Mon Sep 17 00:00:00 2001
+From ecece3211213a621421a3f1854abbcb9d7e6b2e1 Mon Sep 17 00:00:00 2001
 From: Eric Lundby <Eric.Lundby@gmail.com>
-Date: Mon, 19 Jan 2026 13:15:59 -0700
-Subject: [PATCH 1/1] Add win-arm64 support
+Date: Fri, 21 Aug 2026 14:41:31 -0600
+Subject: [PATCH] Add win-arm64 support
 
 ---
- conda_build/convert.py                       |  7 +-
+ conda_build/convert.py                       |  5 +-
  conda_build/launcher_sources/build_arm64.cmd | 81 ++++++++++++++++++++
- conda_build/noarch_python.py                 |  2 +-
+ conda_build/noarch_python.py                 |  3 +-
  tests/test_codesigned.py                     |  3 +-
- 4 files changed, 88 insertions(+), 5 deletions(-)
+ 4 files changed, 87 insertions(+), 5 deletions(-)
  create mode 100644 conda_build/launcher_sources/build_arm64.cmd
 
 diff --git a/conda_build/convert.py b/conda_build/convert.py
-index 5b234364..432e7952 100644
+index 8d027269..807e2e5a 100644
 --- a/conda_build/convert.py
 +++ b/conda_build/convert.py
-@@ -555,13 +555,14 @@ def create_exe_file(directory, executable, target_platform):
+@@ -555,14 +555,15 @@ def create_exe_file(directory, executable, target_platform):
      Positional arguments:
      directory (str) -- the file path to the 'Scripts' directory
      executable (str) -- the filename of the executable to create an exe file for
@@ -24,15 +24,15 @@ index 5b234364..432e7952 100644
      """
      exe_directory = os.path.dirname(__file__)
  
--    if target_platform.endswith("32"):
-+    if target_platform.endswith("arm64"):
-+        executable_file = os.path.join(exe_directory, "cli-arm64.exe")
-+    elif target_platform.endswith("32"):
+     if target_platform == "win-32":
          executable_file = os.path.join(exe_directory, "cli-32.exe")
--
++    elif target_platform == "win-arm64":
++        executable_file = os.path.join(exe_directory, "cli-arm64.exe")
      else:
+-        # FIXME: Update once win-arm64 native launcher is available
          executable_file = os.path.join(exe_directory, "cli-64.exe")
  
+     renamed_executable_file = os.path.join(directory, f"{executable}.exe")
 diff --git a/conda_build/launcher_sources/build_arm64.cmd b/conda_build/launcher_sources/build_arm64.cmd
 new file mode 100644
 index 00000000..ab46d0bd
@@ -121,14 +121,15 @@ index 00000000..ab46d0bd
 +
 +endlocal
 diff --git a/conda_build/noarch_python.py b/conda_build/noarch_python.py
-index 083ffeb0..352df2d2 100644
+index a418d511..352df2d2 100644
 --- a/conda_build/noarch_python.py
 +++ b/conda_build/noarch_python.py
-@@ -144,7 +144,7 @@ def transform(m, files, prefix):
+@@ -144,8 +144,7 @@ def transform(m, files, prefix):
  
      # copy in windows exe shims if there are any python-scripts
      if d["python-scripts"]:
 -        for fn in "cli-32.exe", "cli-64.exe":
+-            # FIXME: Update once win-arm64 native launcher is available
 +        for fn in "cli-32.exe", "cli-64.exe", "cli-arm64.exe":
              shutil.copyfile(join(this_dir, fn), join(prefix, fn))
  
@@ -148,5 +149,5 @@ index 32489f40..230e24f6 100644
  def test_stub_exe_signatures(stub_file_name: str) -> None:
      """Verify that signtool verifies the signature of the stub exes"""
 -- 
-2.50.1 (Apple Git-155)
+2.53.0.windows.1
 
