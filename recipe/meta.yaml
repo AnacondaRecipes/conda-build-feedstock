@@ -14,7 +14,7 @@ source:
 
 build:
   skip: True  # [py<310]
-  number: 0
+  number: 1
   script: {{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv  # [not win]
   entry_points:
     - conda-build = conda_build.cli.main_build:execute
@@ -59,6 +59,7 @@ requirements:
     - pkginfo
     - psutil
     - py-lief
+    - py-rattler-build >=0.61.4
     - python
     - python-libarchive-c
     - pyyaml
