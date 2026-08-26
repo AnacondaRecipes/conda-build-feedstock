@@ -1,6 +1,6 @@
-From 6f88eaa0ea19d729aef0c6130f73be1423afcb93 Mon Sep 17 00:00:00 2001
+From bd85fb20a7093cc77ae3fc4abe148338c9f33b6b Mon Sep 17 00:00:00 2001
 From: Eric Lundby <Eric.Lundby@gmail.com>
-Date: Wed, 12 Aug 2026 13:38:17 -0600
+Date: Wed, 26 Aug 2026 14:45:08 -0600
 Subject: [PATCH 2/2] Fix win-arm64 console script launchers
 
 Resolve Windows CLI launcher stubs from conda-launchers when installed,
@@ -9,14 +9,14 @@ console-script executables (hard-coded build prefixes) with relocatable
 stubs after install, including on win-arm64.
 ---
  conda_build/build.py                  |   4 +
- conda_build/utils.py                  |   4 +-
- conda_build/windows.py                | 147 +++++++++++++++++++++++++-
+ conda_build/utils.py                  |   6 +-
+ conda_build/windows.py                | 149 +++++++++++++++++++++++++-
  tests/test_windows_console_scripts.py |  75 +++++++++++++
- 4 files changed, 228 insertions(+), 2 deletions(-)
+ 4 files changed, 228 insertions(+), 6 deletions(-)
  create mode 100644 tests/test_windows_console_scripts.py
 
 diff --git a/conda_build/build.py b/conda_build/build.py
-index da865f7..92e78c9 100644
+index 3667345..e3195de 100644
 --- a/conda_build/build.py
 +++ b/conda_build/build.py
 @@ -1644,6 +1644,10 @@ def post_process_files(m: MetaData, initial_prefix_files):
@@ -31,7 +31,7 @@ index da865f7..92e78c9 100644
  
      python = (
 diff --git a/conda_build/utils.py b/conda_build/utils.py
-index 8105514..da2567a 100644
+index d2ef77d..da2567a 100644
 --- a/conda_build/utils.py
 +++ b/conda_build/utils.py
 @@ -1083,6 +1083,8 @@ def iter_entry_points(items):
@@ -43,20 +43,23 @@ index 8105514..da2567a 100644
      import_name = func.split(".")[0]
      pyscript = PY_TMPL % {"module": module, "func": func, "import_name": import_name}
      if on_win:
-@@ -1091,7 +1093,7 @@ def create_entry_point(path, module, func, config):
+@@ -1090,10 +1092,8 @@ def create_entry_point(path, module, func, config):
+             if os.path.isfile(os.path.join(config.host_prefix, "python_d.exe")):
                  fo.write("#!python_d\n")
              fo.write(pyscript)
+-            # FIXME: Update once win-arm64 native launcher is available
+-            host_arch = "64" if config.host_arch == "arm64" else str(config.host_arch)
              copy_into(
--                join(dirname(__file__), f"cli-{str(config.host_arch)}.exe"),
+-                join(dirname(__file__), f"cli-{host_arch}.exe"),
 +                get_windows_cli_launcher(config),
                  path + ".exe",
                  config.timeout,
              )
 diff --git a/conda_build/windows.py b/conda_build/windows.py
-index 4302b39..caab30e 100644
+index f6fb172..dff3827 100644
 --- a/conda_build/windows.py
 +++ b/conda_build/windows.py
-@@ -31,6 +31,7 @@ except:
+@@ -33,6 +33,7 @@ except:
      pass
  
  from . import environ
@@ -64,7 +67,7 @@ index 4302b39..caab30e 100644
  from .utils import (
      check_call_env,
      copy_into,
-@@ -53,6 +54,150 @@ VS_VERSION_STRING = {
+@@ -55,6 +56,150 @@ VS_VERSION_STRING = {
  }
  
  
@@ -215,11 +218,14 @@ index 4302b39..caab30e 100644
  def fix_staged_scripts(scripts_dir, config):
      """
      Fixes scripts which have been installed unix-style to have a .bat
-@@ -77,7 +222,7 @@ def fix_staged_scripts(scripts_dir, config):
+@@ -78,10 +223,8 @@ def fix_staged_scripts(scripts_dir, config):
+             with open(join(scripts_dir, fn + "-script.py"), "wb") as fo:
                  fo.write(f.read())
              # now create the .exe file
+-            # FIXME: Update once win-arm64 native launcher is available
+-            host_arch = "64" if config.host_arch == "arm64" else str(config.host_arch)
              copy_into(
--                join(dirname(__file__), f"cli-{config.host_arch}.exe"),
+-                join(dirname(__file__), f"cli-{host_arch}.exe"),
 +                get_windows_cli_launcher(config),
                  join(scripts_dir, fn + ".exe"),
              )
