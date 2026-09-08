@@ -1,19 +1,15 @@
 From ca2270c6608f537b9e3cd5c627bdb13850c823ca Mon Sep 17 00:00:00 2001
 From: Eric Lundby <Eric.Lundby@gmail.com>
 Date: Wed, 26 Aug 2026 14:43:54 -0600
-Subject: [PATCH 1/2] Add win-arm64 support for convert and legacy noarch paths
+Subject: [PATCH] Select bundled native Windows ARM64 launchers
 
-Teach conda convert and legacy noarch_python packaging to select and
-ship cli-arm64.exe stubs when targeting win-arm64. Extend codesign
-tests to cover ARM64 launcher binaries.
+Select cli-arm64.exe for a win-arm64 target in the existing launcher
+copy operations. The recipe supplies the native launcher from the
+published conda-launchers package.
 ---
- conda_build/convert.py       | 7 ++++---
- conda_build/noarch_python.py | 3 +--
- tests/test_codesigned.py     | 3 ++-
- 3 files changed, 7 insertions(+), 6 deletions(-)
 
 diff --git a/conda_build/convert.py b/conda_build/convert.py
-index 8d02726..a07b8b1 100644
+index 8d02726..807e2e5 100644
 --- a/conda_build/convert.py
 +++ b/conda_build/convert.py
 @@ -555,14 +555,15 @@ def create_exe_file(directory, executable, target_platform):
@@ -25,44 +21,43 @@ index 8d02726..a07b8b1 100644
      """
      exe_directory = os.path.dirname(__file__)
  
--    if target_platform == "win-32":
-+    if target_platform.endswith("arm64"):
-+        executable_file = os.path.join(exe_directory, "cli-arm64.exe")
-+    elif target_platform == "win-32":
+     if target_platform == "win-32":
          executable_file = os.path.join(exe_directory, "cli-32.exe")
++    elif target_platform == "win-arm64":
++        executable_file = os.path.join(exe_directory, "cli-arm64.exe")
      else:
 -        # FIXME: Update once win-arm64 native launcher is available
          executable_file = os.path.join(exe_directory, "cli-64.exe")
  
      renamed_executable_file = os.path.join(directory, f"{executable}.exe")
-diff --git a/conda_build/noarch_python.py b/conda_build/noarch_python.py
-index a418d51..352df2d 100644
---- a/conda_build/noarch_python.py
-+++ b/conda_build/noarch_python.py
-@@ -144,8 +144,7 @@ def transform(m, files, prefix):
- 
-     # copy in windows exe shims if there are any python-scripts
-     if d["python-scripts"]:
--        for fn in "cli-32.exe", "cli-64.exe":
+diff --git a/conda_build/utils.py b/conda_build/utils.py
+index d2ef77d..cebb557 100644
+--- a/conda_build/utils.py
++++ b/conda_build/utils.py
+@@ -1090,8 +1090,7 @@ def create_entry_point(path, module, func, config):
+             if os.path.isfile(os.path.join(config.host_prefix, "python_d.exe")):
+                 fo.write("#!python_d\n")
+             fo.write(pyscript)
 -            # FIXME: Update once win-arm64 native launcher is available
-+        for fn in "cli-32.exe", "cli-64.exe", "cli-arm64.exe":
-             shutil.copyfile(join(this_dir, fn), join(prefix, fn))
- 
-     # Read the local _link.py
-diff --git a/tests/test_codesigned.py b/tests/test_codesigned.py
-index 32489f4..230e24f 100644
---- a/tests/test_codesigned.py
-+++ b/tests/test_codesigned.py
-@@ -87,7 +87,8 @@ def signtool_unsupported() -> bool:
- 
- @pytest.mark.skipif(signtool_unsupported(), reason=signtool_unsupported_because())
- @pytest.mark.parametrize(
--    "stub_file_name", ["cli-32.exe", "cli-64.exe", "gui-32.exe", "gui-64.exe"]
-+    "stub_file_name",
-+    ["cli-32.exe", "cli-64.exe", "cli-arm64.exe", "gui-32.exe", "gui-64.exe", "gui-arm64.exe"],
- )
- def test_stub_exe_signatures(stub_file_name: str) -> None:
-     """Verify that signtool verifies the signature of the stub exes"""
+-            host_arch = "64" if config.host_arch == "arm64" else str(config.host_arch)
++            host_arch = str(config.host_arch)
+             copy_into(
+                 join(dirname(__file__), f"cli-{host_arch}.exe"),
+                 path + ".exe",
+diff --git a/conda_build/windows.py b/conda_build/windows.py
+index f6fb172..a6186d2 100644
+--- a/conda_build/windows.py
++++ b/conda_build/windows.py
+@@ -78,8 +78,7 @@ def fix_staged_scripts(scripts_dir, config):
+             with open(join(scripts_dir, fn + "-script.py"), "wb") as fo:
+                 fo.write(f.read())
+             # now create the .exe file
+-            # FIXME: Update once win-arm64 native launcher is available
+-            host_arch = "64" if config.host_arch == "arm64" else str(config.host_arch)
++            host_arch = str(config.host_arch)
+             copy_into(
+                 join(dirname(__file__), f"cli-{host_arch}.exe"),
+                 join(scripts_dir, fn + ".exe"),
 -- 
 2.50.1 (Apple Git-155)
 
