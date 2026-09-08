@@ -1,2 +1,6 @@
 build_env_vars:
   ANACONDA_ROCKET_ENABLE_PY314 : yes
+
+channels:
+  # win-arm64
+  - https://staging.continuum.io/pbp/fs/conda-feedstock/pr0/c0d1161
