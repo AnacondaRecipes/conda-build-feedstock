@@ -1,0 +1,63 @@
+From ca2270c6608f537b9e3cd5c627bdb13850c823ca Mon Sep 17 00:00:00 2001
+From: Eric Lundby <Eric.Lundby@gmail.com>
+Date: Wed, 26 Aug 2026 14:43:54 -0600
+Subject: [PATCH] Select bundled native Windows ARM64 launchers
+
+Select cli-arm64.exe for a win-arm64 target in the existing launcher
+copy operations. The recipe supplies the native launcher from the
+published conda-launchers package.
+---
+
+diff --git a/conda_build/convert.py b/conda_build/convert.py
+index 8d02726..807e2e5 100644
+--- a/conda_build/convert.py
++++ b/conda_build/convert.py
+@@ -555,14 +555,15 @@ def create_exe_file(directory, executable, target_platform):
+     Positional arguments:
+     directory (str) -- the file path to the 'Scripts' directory
+     executable (str) -- the filename of the executable to create an exe file for
+-    target_platform -- the platform to target: 'win-64' or 'win-32'
++    target_platform -- the platform to target: 'win-64', 'win-32', or 'win-arm64'
+     """
+     exe_directory = os.path.dirname(__file__)
+ 
+     if target_platform == "win-32":
+         executable_file = os.path.join(exe_directory, "cli-32.exe")
++    elif target_platform == "win-arm64":
++        executable_file = os.path.join(exe_directory, "cli-arm64.exe")
+     else:
+-        # FIXME: Update once win-arm64 native launcher is available
+         executable_file = os.path.join(exe_directory, "cli-64.exe")
+ 
+     renamed_executable_file = os.path.join(directory, f"{executable}.exe")
+diff --git a/conda_build/utils.py b/conda_build/utils.py
+index d2ef77d..cebb557 100644
+--- a/conda_build/utils.py
++++ b/conda_build/utils.py
+@@ -1090,8 +1090,7 @@ def create_entry_point(path, module, func, config):
+             if os.path.isfile(os.path.join(config.host_prefix, "python_d.exe")):
+                 fo.write("#!python_d\n")
+             fo.write(pyscript)
+-            # FIXME: Update once win-arm64 native launcher is available
+-            host_arch = "64" if config.host_arch == "arm64" else str(config.host_arch)
++            host_arch = str(config.host_arch)
+             copy_into(
+                 join(dirname(__file__), f"cli-{host_arch}.exe"),
+                 path + ".exe",
+diff --git a/conda_build/windows.py b/conda_build/windows.py
+index f6fb172..a6186d2 100644
+--- a/conda_build/windows.py
++++ b/conda_build/windows.py
+@@ -78,8 +78,7 @@ def fix_staged_scripts(scripts_dir, config):
+             with open(join(scripts_dir, fn + "-script.py"), "wb") as fo:
+                 fo.write(f.read())
+             # now create the .exe file
+-            # FIXME: Update once win-arm64 native launcher is available
+-            host_arch = "64" if config.host_arch == "arm64" else str(config.host_arch)
++            host_arch = str(config.host_arch)
+             copy_into(
+                 join(dirname(__file__), f"cli-{host_arch}.exe"),
+                 join(scripts_dir, fn + ".exe"),
+-- 
+2.50.1 (Apple Git-155)
+
