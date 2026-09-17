@@ -1,0 +1,71 @@
+From 2b6f0f0c1a4e6d9b3c5a7e1f0d2c4b6a8e0f1c3d Mon Sep 17 00:00:00 2001
+From: Eric Lundby <Eric.Lundby@gmail.com>
+Date: Thu, 17 Sep 2026 15:00:00 -0600
+Subject: [PATCH] Skip hidden directories during recipe discovery
+
+conda-build would pick up meta files (meta.yaml/yml, conda.yaml/yml) that
+live inside hidden directories, such as a .kilo working directory, and
+treat them as buildable recipes. find_recipe() ignored only the macOS
+.AppleDouble directory, and expand_globs() walked every directory it was
+given.
+
+Ignore dot-directories whenever conda-build discovers recipes:
+
+- find_recipe() now ignores all dot-directories during its recursive
+  search (this subsumes the previous .AppleDouble exclusion).
+- expand_globs() gains an opt-in ignore_hidden flag that prunes
+  dot-directories while walking a directory; api.build() passes it when
+  expanding recipe paths, which is how "conda build <dir>" discovers
+  recipes. The flag defaults to False so file/prefix glob expansion for
+  packaging is unchanged.
+
+A hidden directory passed explicitly as the recipe location is still
+honored; only accidental discovery below a hidden directory is skipped.
+---
+
+diff --git a/conda_build/api.py b/conda_build/api.py
+index 083ef16..6d93091 100644
+--- a/conda_build/api.py
++++ b/conda_build/api.py
+@@ -224,7 +224,7 @@ def build(
+     recipes: list[str | MetaData] = []
+     for recipe in ensure_list(recipe_paths_or_metadata):
+         if isinstance(recipe, (str, os.PathLike, Path)):
+-            for recipe in expand_globs(recipe, os.getcwd()):
++            for recipe in expand_globs(recipe, os.getcwd(), ignore_hidden=True):
+                 try:
+                     recipes.append(find_recipe(recipe))
+                 except OSError:
+diff --git a/conda_build/utils.py b/conda_build/utils.py
+index d2ef77d..f3aa995 100644
+--- a/conda_build/utils.py
++++ b/conda_build/utils.py
+@@ -1286,6 +1286,7 @@ def tmp_chdir(dest):
+ def expand_globs(
+     path_list: str | os.PathLike | Path | Iterable[str | os.PathLike | Path],
+     root_dir: str | os.PathLike | Path,
++    ignore_hidden: bool = False,
+ ) -> list[str]:
+     files = []
+     for path in ensure_list(path_list):
+@@ -1298,6 +1299,8 @@ def expand_globs(
+             files.append(path)
+         elif os.path.isdir(path):
+             for root, dirnames, fs in walk(path):
++                if ignore_hidden:
++                    dirnames[:] = [d for d in dirnames if not d.startswith(".")]
+                 files.extend(os.path.join(root, f) for f in fs)
+                 for folder in dirnames:
+                     if os.path.islink(os.path.join(root, folder)):
+@@ -1335,7 +1338,7 @@ def find_recipe(path: str) -> str:
+             "{} is not a valid meta file ({})".format(path, ", ".join(VALID_METAS))
+         )
+ 
+-    results = list(rec_glob(path, VALID_METAS, ignores=(".AppleDouble",)))
++    results = list(rec_glob(path, VALID_METAS, ignores=(".*",)))
+ 
+     if not results:
+         raise OSError(
+-- 
+2.50.1 (Apple Git-155)
+
